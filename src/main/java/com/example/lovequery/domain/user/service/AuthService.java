@@ -1,11 +1,11 @@
 package com.example.lovequery.domain.user.service;
 
 
+import com.example.lovequery.common.exception.CustomException;
+import com.example.lovequery.common.exception.ErrorCode;
 import com.example.lovequery.domain.user.entity.User;
 import com.example.lovequery.domain.user.dto.LoginRequest;
 import com.example.lovequery.domain.user.dto.SignUpRequest;
-import com.example.lovequery.common.exception.EmailDuplicateException;
-import com.example.lovequery.common.exception.LoginFailedException;
 import com.example.lovequery.domain.user.repository.AuthRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,7 +23,7 @@ public class AuthService {
     @Transactional
     public void signUp(SignUpRequest request) {
         if (authRepository.existsByEmail(request.email())) {
-            throw new EmailDuplicateException("이미 사용 중인 이메일입니다.");
+            throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
         }
 
         String encodedPassword =passwordEncoder.encode(request.password());
@@ -44,10 +44,10 @@ public class AuthService {
     public User login(LoginRequest request) {
 
        User user= authRepository.findByEmail(request.email())
-               .orElseThrow(()-> new LoginFailedException("존재하지 않는 이메일입니다."));
+               .orElseThrow(()-> new CustomException(ErrorCode.EMAIL_NOT_FOUND));
 
        if(!passwordEncoder.matches(request.password(),user.getPassword())){
-           throw new LoginFailedException("비밀번호가 틀렸습니다.");
+           throw new CustomException(ErrorCode.INCORRECT_PASSWORD);
        }
 
 

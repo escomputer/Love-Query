@@ -8,13 +8,33 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(EmailDuplicateException.class)
-    public ResponseEntity<String> handleEmailDuplicate(EmailDuplicateException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<ErrorResponse> handleCustomException(CustomException ex) {
+
+        ErrorCode errorCode = ex.getErrorCode();
+
+        ErrorResponse response = new ErrorResponse(
+                errorCode.name(),
+                ex.getMessage(),
+                errorCode.getStatus().value()
+        );
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(response);
     }
 
-    @ExceptionHandler(LoginFailedException.class)
-    public ResponseEntity<String> handleLoginFailed(LoginFailedException e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+    // 예상못한 예외 일괄 처리
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(Exception ex) {
+        ErrorResponse response = new ErrorResponse(
+                ErrorCode.INTERNAL_ERROR.name(),
+                ex.getMessage(),
+                ErrorCode.INTERNAL_ERROR.getStatus().value()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(response);
     }
 }
