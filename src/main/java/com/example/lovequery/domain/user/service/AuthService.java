@@ -22,17 +22,17 @@ public class AuthService {
 
     @Transactional
     public void signUp(SignUpRequest request) {
-        if (authRepository.existsByEmail(request.getEmail())) {
+        if (authRepository.existsByEmail(request.email())) {
             throw new EmailDuplicateException("이미 사용 중인 이메일입니다.");
         }
 
-        String encodedPassword =passwordEncoder.encode(request.getPassword());
+        String encodedPassword =passwordEncoder.encode(request.password());
 
         User user = User.builder()
-                .name(request.getName())
-                .email(request.getEmail())
+                .name(request.name())
+                .email(request.email())
                 .password(encodedPassword)
-                .roleName(request.getRole())
+                .roleName(request.role())
                 .build();
 
 
@@ -43,10 +43,10 @@ public class AuthService {
     @Transactional(readOnly = true)
     public User login(LoginRequest request) {
 
-       User user= authRepository.findByEmail(request.getEmail())
+       User user= authRepository.findByEmail(request.email())
                .orElseThrow(()-> new LoginFailedException("존재하지 않는 이메일입니다."));
 
-       if(!passwordEncoder.matches(request.getPassword(),user.getPassword())){
+       if(!passwordEncoder.matches(request.password(),user.getPassword())){
            throw new LoginFailedException("비밀번호가 틀렸습니다.");
        }
 
