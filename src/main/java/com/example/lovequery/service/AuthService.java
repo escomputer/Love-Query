@@ -7,6 +7,7 @@ import com.example.lovequery.exception.EmailDuplicateException;
 import com.example.lovequery.exception.LoginFailedException;
 import com.example.lovequery.repository.AuthRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final AuthRepository authRepository;
+    private final PasswordEncoder passwordEncoder;
 
 
     @Transactional
@@ -23,10 +25,12 @@ public class AuthService {
             throw new EmailDuplicateException("이미 사용 중인 이메일입니다.");
         }
 
+        String encodedPassword =passwordEncoder.encode(request.getPassword());
+
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
-                .password(request.getPassword())
+                .password(encodedPassword)
                 .roleName(request.getRole())
                 .build();
 
@@ -41,7 +45,7 @@ public class AuthService {
        User user= authRepository.findByEmail(request.getEmail())
                .orElseThrow(()-> new LoginFailedException("존재하지 않는 이메일입니다."));
 
-       if(!request.getPassword().equals(user.getPassword())){
+       if(!passwordEncoder.matches(request.getPassword(),user.getPassword())){
            throw new LoginFailedException("비밀번호가 틀렸습니다.");
        }
 
