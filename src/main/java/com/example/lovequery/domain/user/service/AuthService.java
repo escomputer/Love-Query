@@ -1,11 +1,12 @@
-package com.example.lovequery.service;
+package com.example.lovequery.domain.user.service;
 
-import com.example.lovequery.dto.User.LoginRequest;
-import com.example.lovequery.dto.User.SignUpRequest;
-import com.example.lovequery.entity.User;
-import com.example.lovequery.exception.EmailDuplicateException;
-import com.example.lovequery.exception.LoginFailedException;
-import com.example.lovequery.repository.AuthRepository;
+
+import com.example.lovequery.domain.user.entity.User;
+import com.example.lovequery.domain.user.dto.LoginRequest;
+import com.example.lovequery.domain.user.dto.SignUpRequest;
+import com.example.lovequery.common.exception.EmailDuplicateException;
+import com.example.lovequery.common.exception.LoginFailedException;
+import com.example.lovequery.domain.user.repository.AuthRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

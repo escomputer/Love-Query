@@ -1,4 +1,4 @@
-package com.example.lovequery.exception;
+package com.example.lovequery.common.exception;
 
 public class LoginFailedException extends RuntimeException {
     public LoginFailedException(String message) {

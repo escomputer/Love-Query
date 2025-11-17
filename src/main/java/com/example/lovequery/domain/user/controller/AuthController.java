@@ -1,10 +1,10 @@
-package com.example.lovequery.controller;
+package com.example.lovequery.domain.user.controller;
 
 
-import com.example.lovequery.dto.User.LoginRequest;
-import com.example.lovequery.dto.User.SignUpRequest;
-import com.example.lovequery.entity.User;
-import com.example.lovequery.service.AuthService;
+import com.example.lovequery.domain.user.entity.User;
+import com.example.lovequery.domain.user.dto.LoginRequest;
+import com.example.lovequery.domain.user.dto.SignUpRequest;
+import com.example.lovequery.domain.user.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;

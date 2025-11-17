@@ -1,5 +1,6 @@
-package com.example.lovequery.entity;
+package com.example.lovequery.domain.user.entity;
 
+import com.example.lovequery.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -7,10 +8,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name="users")
+@Table(name="users",
+        indexes = {@Index(name = "uk_users_email", columnList = "email", unique = true)})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,4 +1,4 @@
-package com.example.lovequery.exception;
+package com.example.lovequery.common.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
