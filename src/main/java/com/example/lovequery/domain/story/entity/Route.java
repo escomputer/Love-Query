@@ -37,4 +37,11 @@ public class Route extends BaseEntity {
     private String warningText;
 
     protected Route() {}
+
+    public Route(GameCharacter character, String title, Integer minAffectionRequired, String warningText) {
+        this.character = character;
+        this.title = title;
+        this.minAffectionRequired = minAffectionRequired;
+        this.warningText = warningText;
+    }
 }

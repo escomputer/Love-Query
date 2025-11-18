@@ -40,4 +40,22 @@ public class Episode extends BaseEntity {
 
     protected Episode() {}
 
+    public Episode(Route route, String text) {
+        this.route = route;
+        this.text = text;
+    }
+
+    public void changeBackground(String bgAsset) {
+        this.bgAsset = bgAsset;
+    }
+
+    public void changeMusic(String musicAsset) {
+        this.musicAsset = musicAsset;
+    }
+
+    public void markAsEnding(String endingLabel) {
+        this.isEnding = true;
+        this.endingLabel = endingLabel;
+    }
+
 }
