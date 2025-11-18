@@ -1,4 +1,4 @@
-package com.example.lovequery.domain.story.dto;
+package com.example.lovequery.domain.story.dto.character;
 
 import com.example.lovequery.domain.story.entity.GameCharacter;
 

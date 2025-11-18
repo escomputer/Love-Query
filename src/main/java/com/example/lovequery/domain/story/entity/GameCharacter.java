@@ -32,4 +32,11 @@ public class GameCharacter {
 
     protected GameCharacter() {}
 
+    public GameCharacter(String name, String gender, String personality, Integer affinityCap){
+        this.name = name;
+        this.gender = gender;
+        this.personality = personality;
+        this.affinityCap = affinityCap;
+    }
+
 }
