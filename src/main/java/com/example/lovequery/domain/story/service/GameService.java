@@ -6,8 +6,8 @@ import com.example.lovequery.domain.player.entity.Player;
 import com.example.lovequery.domain.player.entity.PlayerAffection;
 import com.example.lovequery.domain.player.repository.PlayerAffectionRepository;
 import com.example.lovequery.domain.player.repository.PlayerRepository;
-import com.example.lovequery.domain.story.dto.ChoiceDto;
-import com.example.lovequery.domain.story.dto.GameCharacterDto;
+import com.example.lovequery.domain.story.dto.choice.ChoiceDto;
+import com.example.lovequery.domain.story.dto.character.GameCharacterDto;
 import com.example.lovequery.domain.story.dto.GameStateDto;
 import com.example.lovequery.domain.story.entity.Choice;
 import com.example.lovequery.domain.story.entity.Episode;
@@ -119,6 +119,8 @@ public class GameService {
         return toGameStateDto(next);
 
     }
+
+
 
 
     private GameStateDto toGameStateDto(Episode ep) {

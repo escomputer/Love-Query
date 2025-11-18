@@ -1,6 +1,6 @@
 package com.example.lovequery.domain.story.dto;
 
-import com.example.lovequery.domain.story.entity.Episode;
+import com.example.lovequery.domain.story.dto.choice.ChoiceDto;
 
 import java.util.List;
 

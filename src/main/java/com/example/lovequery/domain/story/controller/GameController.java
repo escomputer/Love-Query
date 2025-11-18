@@ -26,7 +26,7 @@ public class GameController {
             throw new CustomException(ErrorCode.NO_PERMISSION);
         }
 
-        return gameService.startGame(characterId,userId);
+        return gameService.startGame(userId,characterId);
     }
 
     /**
@@ -46,7 +46,7 @@ public class GameController {
      * 선택지 선택
      */
     @PostMapping("/choose")
-    public GameStateDto choose(@RequestBody Long choiceId,HttpSession session){
+    public GameStateDto choose(@RequestParam Long choiceId,HttpSession session){
         Long userId = (Long) session.getAttribute("userId");
         if(userId == null){
             throw new CustomException(ErrorCode.NO_PERMISSION);
@@ -54,4 +54,6 @@ public class GameController {
 
         return gameService.choose(userId, choiceId);
     }
+
+
 }
