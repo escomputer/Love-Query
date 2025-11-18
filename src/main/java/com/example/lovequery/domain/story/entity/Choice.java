@@ -24,8 +24,7 @@ public class Choice extends BaseEntity {
     @JoinColumn(name = "ep_id")
     private Episode episode;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(columnDefinition ="text",nullable = false)
     private String text;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -49,4 +48,23 @@ public class Choice extends BaseEntity {
     private String tipText;               // 최종 리포트용 힌트
 
     protected Choice() {}
+
+    public Choice(Episode episode, String text, Episode nextFail, Episode nextPass , Integer affectionDelta, Integer threshold) {
+        this.episode = episode;
+        this.text = text;
+        this.nextEpisodeIfPass = nextPass;
+        this.nextEpisodeIfFail = nextFail;
+        this.affectionDelta = affectionDelta;
+        this.threshold = threshold;
+
+    }
+
+    public void updateTag(String qualityTag) {
+        this.qualityTag = qualityTag;
+    }
+
+    public void updateTipText(String tipText) {
+        this.tipText = tipText;
+    }
+
 }
