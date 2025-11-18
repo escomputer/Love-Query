@@ -2,6 +2,7 @@ package com.example.lovequery.domain.story.entity;
 
 import com.example.lovequery.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 @Entity
 @Table(
@@ -10,6 +11,7 @@ import jakarta.persistence.*;
                 @Index(name = "idx_routes_char_id", columnList = "character_id")
         }
 )
+@Getter
 public class Route extends BaseEntity {
 
     @Id

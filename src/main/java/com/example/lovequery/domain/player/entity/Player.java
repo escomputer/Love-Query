@@ -5,14 +5,16 @@ import com.example.lovequery.common.BaseEntity;
 import com.example.lovequery.domain.story.entity.Episode;
 import com.example.lovequery.domain.user.entity.User;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 @Entity
 @Table(name ="players",
         indexes = {
                 @Index(name = "idx_players_user_id", columnList = "user_id"),
-                @Index(name = "idx_players_current_ep_id", columnList = "current_episode_id")
+                @Index(name = "idx_players_current_ep_id", columnList = "current_ep_id")
         }
 )
+@Getter
 public class Player extends BaseEntity {
 
     @Id
@@ -34,6 +36,10 @@ public class Player extends BaseEntity {
 
     public Player(User user) {
         this.user = user;
+    }
+
+    public void changeCurrentEpisode(Episode episode) {
+        this.currentEpisode = episode;
     }
 
 

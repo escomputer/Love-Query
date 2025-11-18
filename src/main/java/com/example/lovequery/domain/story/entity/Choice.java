@@ -8,9 +8,9 @@ import lombok.Getter;
 @Table(
         name = "choices",
         indexes = {
-                @Index(name = "idx_choices_ep_id", columnList = "episode_id"),
-                @Index(name = "idx_choices_next_pass", columnList = "next_episode_if_pass_id"),
-                @Index(name = "idx_choices_next_fail", columnList = "next_episode_if_fail_id")
+                @Index(name = "idx_choices_ep_id", columnList = "ep_id"),
+                @Index(name = "idx_choices_next_pass", columnList = "next_ep_if_pass_id"),
+                @Index(name = "idx_choices_next_fail", columnList = "next_ep_if_fail_id")
         }
 )
 @Getter
