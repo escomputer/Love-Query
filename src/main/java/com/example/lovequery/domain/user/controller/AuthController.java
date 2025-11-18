@@ -1,11 +1,10 @@
 package com.example.lovequery.domain.user.controller;
 
 
-import com.example.lovequery.domain.user.entity.User;
 import com.example.lovequery.domain.user.dto.LoginRequest;
+import com.example.lovequery.domain.user.dto.LoginResponse;
 import com.example.lovequery.domain.user.dto.SignUpRequest;
 import com.example.lovequery.domain.user.service.AuthService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,17 +30,14 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest){
+    public LoginResponse login(@RequestBody LoginRequest request, HttpSession session){
 
-        User user = authService.login(request);
+        return authService.login(request,session);
+    }
 
-        HttpSession httpSession = httpRequest.getSession();
-
-        httpSession.setAttribute("userId", user.getUserId());
-        httpSession.setAttribute("name", user.getName());
-        httpSession.setAttribute("email", user.getEmail());
-
-
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpSession session){
+        authService.logout(session);
         return ResponseEntity.ok().build();
     }
 }

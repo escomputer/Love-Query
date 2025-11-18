@@ -17,7 +17,7 @@ public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="user_id")
-    private Long userId;
+    private Long id;
 
     @Column(nullable = false)
     private String name;
@@ -30,13 +30,17 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "role_name")
-    private Role roleName;
+    private Role role;
 
     @Builder
-    public User(String name, String email, String password, Role roleName) {
+    public User(String name, String email, String password, Role role) {
         this.name = name;
         this.email = email;
         this.password = password;
-        this.roleName = roleName;
+        this.role = role;
+    }
+
+    public void changeRole(Role newRole){
+        this.role = newRole;
     }
 }
