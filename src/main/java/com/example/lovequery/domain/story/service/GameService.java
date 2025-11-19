@@ -6,9 +6,9 @@ import com.example.lovequery.domain.player.entity.Player;
 import com.example.lovequery.domain.player.entity.PlayerAffection;
 import com.example.lovequery.domain.player.repository.PlayerAffectionRepository;
 import com.example.lovequery.domain.player.repository.PlayerRepository;
-import com.example.lovequery.domain.story.dto.choice.ChoiceDto;
-import com.example.lovequery.domain.story.dto.character.GameCharacterDto;
 import com.example.lovequery.domain.story.dto.GameStateDto;
+import com.example.lovequery.domain.story.dto.character.CharacterResponse;
+import com.example.lovequery.domain.story.dto.choice.ChoiceDto;
 import com.example.lovequery.domain.story.entity.Choice;
 import com.example.lovequery.domain.story.entity.Episode;
 import com.example.lovequery.domain.story.entity.Route;
@@ -49,9 +49,17 @@ public class GameService {
         this.userRepository = userRepository;
     }
 
-    public List<GameCharacterDto> getCharacters() {
+    @Transactional(readOnly = true)
+    public List<CharacterResponse> getAllCharacter(){
         return characterRepository.findAll().stream()
-                .map(GameCharacterDto::from)
+                .map(c-> new CharacterResponse(
+                        c.getId(),
+                        c.getName(),
+                        c.getGender(),
+                        c.getPersonality(),
+                        c.getAffinityCap(),
+                        c.getPopularityScore()
+                ))
                 .toList();
     }
 

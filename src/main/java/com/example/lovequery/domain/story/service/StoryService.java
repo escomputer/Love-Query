@@ -139,19 +139,7 @@ public class StoryService {
 
     }
 
-    @Transactional
-    public List<CharacterResponse> getAllCharacter(){
-        return gameCharacterRepository.findAll().stream()
-                .map(c-> new CharacterResponse(
-                        c.getId(),
-                        c.getName(),
-                        c.getGender(),
-                        c.getPersonality(),
-                        c.getAffinityCap(),
-                        c.getPopularityScore()
-                ))
-                .toList();
-    }
+
 
     @Transactional
     public RouteResponse createRoute(Long userId, CreateRouteRequest request){

@@ -3,10 +3,13 @@ package com.example.lovequery.domain.story.controller;
 import com.example.lovequery.common.exception.CustomException;
 import com.example.lovequery.common.exception.ErrorCode;
 import com.example.lovequery.domain.story.dto.GameStateDto;
+import com.example.lovequery.domain.story.dto.character.CharacterResponse;
 import com.example.lovequery.domain.story.service.GameService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/game")
@@ -14,6 +17,14 @@ import org.springframework.web.bind.annotation.*;
 public class GameController {
 
     private final GameService gameService;
+
+    /**
+     * character get
+     */
+    @GetMapping("/characters")
+    public List<CharacterResponse> getCharacters(){
+        return gameService.getAllCharacter();
+    }
 
     /**
      * 게임시작/캐릭터 선택

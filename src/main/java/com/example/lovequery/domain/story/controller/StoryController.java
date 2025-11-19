@@ -65,13 +65,7 @@ public class StoryController {
         return storyService.createCharacter(userId,req);
     }
 
-    /**
-     * character get
-     */
-    @GetMapping("/characters")
-    public List<CharacterResponse> getCharacters(){
-        return storyService.getAllCharacter();
-    }
+
 
     /**
      * create route
