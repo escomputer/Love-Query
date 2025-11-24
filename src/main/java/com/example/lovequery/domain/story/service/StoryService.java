@@ -91,6 +91,7 @@ public class StoryService {
 
         int delta = request.affectionDelta()==null?0:request.affectionDelta();
         Integer threshold=request.threshold();
+        Integer minAffection = request.minRequiredAffection();
 
         Choice choice = new Choice(
                 ep,
@@ -98,7 +99,8 @@ public class StoryService {
                 nextFail,
                 nextPass,
                 delta,
-                threshold
+                threshold,
+                minAffection
         );
 
         Choice saved = choiceRepository.save(choice);
@@ -110,7 +112,8 @@ public class StoryService {
                 saved.getNextEpisodeIfFail()!=null?saved.getNextEpisodeIfFail().getId():null,
                 saved.getNextEpisodeIfPass()!=null?saved.getNextEpisodeIfPass().getId():null,
                 saved.getAffectionDelta(),
-                saved.getThreshold()
+                saved.getThreshold(),
+                saved.getMinRequiredAffection()
         );
     }
 

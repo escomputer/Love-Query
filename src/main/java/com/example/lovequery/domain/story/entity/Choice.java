@@ -41,19 +41,22 @@ public class Choice extends BaseEntity {
     @Column(nullable = false)
     private Integer threshold = 0;        // 통과 기준 호감도 등
 
+    @Column(name="min_required_affection")
+    private Integer minRequiredAffection;
 
     @Column(length = 255)
     private String tipText;               // 최종 리포트용 힌트
 
     protected Choice() {}
 
-    public Choice(Episode episode, String text, Episode nextFail, Episode nextPass , Integer affectionDelta, Integer threshold) {
+    public Choice(Episode episode, String text, Episode nextFail, Episode nextPass , Integer affectionDelta, Integer threshold,Integer minRequiredAffection) {
         this.episode = episode;
         this.text = text;
         this.nextEpisodeIfPass = nextPass;
         this.nextEpisodeIfFail = nextFail;
         this.affectionDelta = affectionDelta;
         this.threshold = threshold;
+        this.minRequiredAffection = minRequiredAffection;
 
     }
 

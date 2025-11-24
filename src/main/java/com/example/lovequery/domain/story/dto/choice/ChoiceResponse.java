@@ -8,6 +8,7 @@ public record ChoiceResponse(
         Long nextEpIfPassId,
 
         Integer affectionDelta,
-        Integer threshold
+        Integer threshold,
+        Integer minAffection
 ) {
 }

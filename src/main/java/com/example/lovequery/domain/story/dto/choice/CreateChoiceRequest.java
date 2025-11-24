@@ -5,6 +5,7 @@ public record CreateChoiceRequest(
         Long nextEpIfFailId,
         Long nextEpIfPassId,
         Integer affectionDelta,
-        Integer threshold
+        Integer threshold,
+        Integer minRequiredAffection
 ) {
 }

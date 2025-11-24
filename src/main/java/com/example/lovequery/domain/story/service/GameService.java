@@ -51,9 +51,9 @@ public class GameService {
     }
 
     @Transactional(readOnly = true)
-    public List<CharacterResponse> getAllCharacter(){
+    public List<CharacterResponse> getAllCharacter() {
         return characterRepository.findAll().stream()
-                .map(c-> new CharacterResponse(
+                .map(c -> new CharacterResponse(
                         c.getId(),
                         c.getName(),
                         c.getGender(),
@@ -65,105 +65,115 @@ public class GameService {
     }
 
     @Transactional
-    public GameStateDto startGame(Long userId, Long characterId){
+    public GameStateDto startGame(Long userId, Long characterId) {
         //유저 조회(없으면 에러)
         User user = userRepository.findById(userId)
-                .orElseThrow(()-> new CustomException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         //player 조회 (아마 회원가입한 모두가 가지고 있기에 예외처리 발생하지 않을 듯 !)
         Player player = playerRepository.findByUserId(userId)
-                .orElseThrow(()-> new CustomException(ErrorCode.PLAYER_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAYER_NOT_FOUND));
 
         Route route = routeRepository.findByCharacterId(characterId).stream()
                 .findFirst()
-                .orElseThrow(()->new CustomException(ErrorCode.ROUTE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTE_NOT_FOUND));
 
         Episode ep = episodeRepository.findFirstByRouteIdOrderByIdAsc(route.getId())
-                .orElseThrow(()->new CustomException(ErrorCode.EPISODE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.EPISODE_NOT_FOUND));
 
         player.changeCurrentEpisode(ep);
 
         playerAffectionRepository.findByPlayerIdAndCharacterId(player.getId(), characterId)
-                .orElseGet(()->playerAffectionRepository.save(new PlayerAffection(player,route.getCharacter(),0)));
+                .orElseGet(() -> playerAffectionRepository.save(new PlayerAffection(player, route.getCharacter(), 0)));
 
-        return toGameStateDto(ep,userId);
+        return toGameStateDto(ep, userId);
 
 
     }
 
     @Transactional(readOnly = true)
-    public GameStateDto getCurrentState(Long userId){
+    public GameStateDto getCurrentState(Long userId) {
 
         Player player = playerRepository.findByUserId(userId)
-                .orElseThrow(()-> new CustomException(ErrorCode.PLAYER_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAYER_NOT_FOUND));
 
         Episode current = player.getCurrentEpisode();
 
-        if(current == null){
+        if (current == null) {
             throw new CustomException(ErrorCode.EPISODE_NOT_FOUND);
         }
 
-        return toGameStateDto(current,userId);
+        return toGameStateDto(current, userId);
 
     }
 
     @Transactional
-    public GameStateDto choose(Long userId, Long choiceId){
+    public GameStateDto choose(Long userId, Long choiceId) {
 
-        Player player=playerRepository.findByUserId(userId)
-                .orElseThrow(()->new CustomException(ErrorCode.PLAYER_NOT_FOUND));
+        Player player = playerRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAYER_NOT_FOUND));
 
         Choice choice = choiceRepository.findById(choiceId)
-                .orElseThrow(()->new CustomException(ErrorCode.CHOICE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.CHOICE_NOT_FOUND));
 
         Episode current = player.getCurrentEpisode();
+
+        if (current == null) {
+            throw new CustomException(ErrorCode.EPISODE_NOT_FOUND);
+        }
+
         Route route = current.getRoute();
         GameCharacter thisCharacter = route.getCharacter();
 
         // affection 조회
         PlayerAffection affection = playerAffectionRepository
                 .findByPlayerIdAndCharacterId(player.getId(), thisCharacter.getId())
-                .orElseGet(()->playerAffectionRepository.save(
-                        new PlayerAffection(player,thisCharacter,0)
+                .orElseGet(() -> playerAffectionRepository.save(
+                        new PlayerAffection(player, thisCharacter, 0)
                 ));
 
+        int currentScore = affection.getScore();
+
+        Integer minAffection = choice.getMinRequiredAffection();
+        if (minAffection != null && currentScore < minAffection) {
+            throw new CustomException(ErrorCode.CHOICE_LOCKED, "호감도" + minAffection + "이상이어야 선택할 수 있습니다.");
+        }
 
         //affectionDelta 적용하기
-        int before = affection.getScore();
-        int delta = choice.getAffectionDelta()!=null ?choice.getAffectionDelta():0;
+        int before = currentScore;
+        int delta = choice.getAffectionDelta() != null ? choice.getAffectionDelta() : 0;
         int update = before + delta;
 
         //min 0
-        if(update<0){
-            update=0;
+        if (update < 0) {
+            update = 0;
         }
 
-        Integer cap= thisCharacter.getAffinityCap();
-        if(cap!=null&&update>cap){
-            update=cap;
+        Integer cap = thisCharacter.getAffinityCap();
+        if (cap != null && update > cap) {
+            update = cap;
         }
 
         //호감도 범위 [0,affinityCap]
 
         affection.updateScore(update);
 
-        GameStateDto bad = handleRouteMinAffection(route,player,update);
-        if(bad!=null) return bad;
+        GameStateDto bad = handleRouteMinAffection(route, player, update);
+        if (bad != null) return bad;
 
-        Episode next = resolveNextEpisodeByRule(choice,update);
-
+        Episode next = resolveNextEpisodeByRule(choice, update);
 
 
         //엔딩 판정 포인트
-        if(Boolean.TRUE.equals(next.getIsEnding())){
-            return resolveEnding(route,player,next,update);
+        if (Boolean.TRUE.equals(next.getIsEnding())) {
+            return resolveEnding(route, player, next, update);
         }
 
 
         player.changeCurrentEpisode(next);
 
 
-        return toGameStateDto(next,userId);
+        return toGameStateDto(next, userId);
 
     }
 
@@ -173,7 +183,7 @@ public class GameService {
 
         List<ChoiceDto> choices = choiceRepository.findByEpisodeId(episode.getId())
                 .stream()
-                .map(ChoiceDto::from)
+                .map(ch->ChoiceDto.from(ch, affectionScore))
                 .toList();
 
         return new GameStateDto(
@@ -202,24 +212,25 @@ public class GameService {
         return null; // BAD 엔딩 아님
     }
 
-    private GameStateDto toGameStateDto(Episode ep,Long userId) {
-        List<ChoiceDto> choiceDtos= choiceRepository.findByEpisodeId(ep.getId())
-                .stream()
-                .map(ChoiceDto::from)
-                .toList();
+    private GameStateDto toGameStateDto(Episode ep, Long userId) {
+
 
         //호감도 불러오기 없으면 0
 
-        Player player= playerRepository.findByUserId(userId)
-                .orElseThrow(()-> new CustomException(ErrorCode.PLAYER_NOT_FOUND));
+        Player player = playerRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAYER_NOT_FOUND));
 
         GameCharacter character = ep.getRoute().getCharacter();
 
-        PlayerAffection affection= playerAffectionRepository.findByPlayerIdAndCharacterId(
-                player.getId(),character.getId()
+        PlayerAffection affection = playerAffectionRepository.findByPlayerIdAndCharacterId(
+                player.getId(), character.getId()
         ).orElse(null);
 
         int score = (affection != null) ? affection.getScore() : 0;
+        List<ChoiceDto> choiceDtos = choiceRepository.findByEpisodeId(ep.getId())
+                .stream()
+                .map(ch->ChoiceDto.from(ch, score))
+                .toList();
 
         boolean isEnding = Boolean.TRUE.equals(ep.getIsEnding());
 
@@ -243,27 +254,27 @@ public class GameService {
         Integer trueThreshold = route.getTrueEndingThreshold();
 
         //True
-        if(trueThreshold!=null && update>=trueThreshold && route.getTrueEndingEpisode()!=null){
+        if (trueThreshold != null && update >= trueThreshold && route.getTrueEndingEpisode() != null) {
             target = route.getTrueEndingEpisode();
-            endingType ="TRUE";
+            endingType = "TRUE";
 
-        } else if (minRequired!=null && update>= minRequired && route.getNormalEndingEpisode()!=null) {
+        } else if (minRequired != null && update >= minRequired && route.getNormalEndingEpisode() != null) {
             target = route.getNormalEndingEpisode();
-            endingType ="NORMAL";
+            endingType = "NORMAL";
 
-        }else if (route.getBadEndingEpisode()!= null){
+        } else if (route.getBadEndingEpisode() != null) {
             target = route.getBadEndingEpisode();
-            endingType ="BAD";
-        }else{
+            endingType = "BAD";
+        } else {
             target = episode;
-            endingType=null;
+            endingType = null;
         }
 
         player.changeCurrentEpisode(target);
 
         List<ChoiceDto> choices = choiceRepository.findByEpisodeId(target.getId())
                 .stream()
-                .map(ChoiceDto::from)
+                .map(choice -> ChoiceDto.from(choice,update))
                 .toList();
 
         return new GameStateDto(
@@ -277,37 +288,37 @@ public class GameService {
         );
     }
 
-    private Episode resolveNextEpisodeByRule(Choice choice, int update){
+    private Episode resolveNextEpisodeByRule(Choice choice, int update) {
         Integer threshold = choice.getThreshold();
         Episode next;
 
-        if(threshold!=null){
-            if(update>=threshold){
-                next=choice.getNextEpisodeIfPass();
-                if(next==null){
+        if (threshold != null) {
+            if (update >= threshold) {
+                next = choice.getNextEpisodeIfPass();
+                if (next == null) {
                     throw new CustomException(ErrorCode.PASS_NEXT_EPISODE_NOT_FOUND);
                 }
 
                 return next;
-            }else{
-                next=choice.getNextEpisodeIfFail();
-                if(next==null){
+            } else {
+                next = choice.getNextEpisodeIfFail();
+                if (next == null) {
                     throw new CustomException(ErrorCode.FAIL_NEXT_EPISODE_NOT_FOUND);
                 }
                 return next;
             }
         }
 
-        int delta = choice.getAffectionDelta()!=null ? choice.getAffectionDelta() : 0;
+        int delta = choice.getAffectionDelta() != null ? choice.getAffectionDelta() : 0;
 
-        if(delta<0){
-            next=choice.getNextEpisodeIfFail();
-            if(next==null){
+        if (delta < 0) {
+            next = choice.getNextEpisodeIfFail();
+            if (next == null) {
                 throw new CustomException(ErrorCode.FAIL_NEXT_EPISODE_NOT_FOUND);
             }
-        }else{
-            next=choice.getNextEpisodeIfPass();
-            if(next==null){
+        } else {
+            next = choice.getNextEpisodeIfPass();
+            if (next == null) {
                 throw new CustomException(ErrorCode.PASS_NEXT_EPISODE_NOT_FOUND);
             }
         }

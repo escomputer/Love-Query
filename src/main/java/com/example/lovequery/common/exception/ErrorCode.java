@@ -19,6 +19,7 @@ public enum ErrorCode {
     EPISODE_NOT_FOUND(HttpStatus.NOT_FOUND,"존재하지 않는 에피소드입니다."),
     FAIL_NEXT_EPISODE_NOT_FOUND(HttpStatus.NOT_FOUND,"다음 FAIL 에피소드가 존재하지 않습니다."),
     PASS_NEXT_EPISODE_NOT_FOUND(HttpStatus.NOT_FOUND,"다음 PASS 에피소드가 존재하지 않습니다."),
+    CHOICE_LOCKED(HttpStatus.FORBIDDEN,"호감도가 부족하여 선택할 수 없습니다."),
     BAD_EPISODE_NOT_FOUND(HttpStatus.NOT_FOUND,"존재하지 않는 BAD 에피소드입니다."),
     TRUE_EPISODE_NOT_FOUND(HttpStatus.NOT_FOUND,"존재하지 않는 TRUE 에피소드입니다."),
     NORMAL_EPISODE_NOT_FOUND(HttpStatus.NOT_FOUND,"존재하지 않는 NORMAL 에피소드입니다."),
