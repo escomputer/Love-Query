@@ -132,32 +132,27 @@ public class GameService {
         int before = affection.getScore();
         int delta = choice.getAffectionDelta()!=null ?choice.getAffectionDelta():0;
         int update = before + delta;
+
+        //min 0
+        if(update<0){
+            update=0;
+        }
+
+        Integer cap= thisCharacter.getAffinityCap();
+        if(cap!=null&&update>cap){
+            update=cap;
+        }
+
+        //호감도 범위 [0,affinityCap]
+
         affection.updateScore(update);
 
-        //중간 badending
-        Integer minRequired = route.getMinAffectionRequired();
+        GameStateDto bad = handleRouteMinAffection(route,player,update);
+        if(bad!=null) return bad;
 
-        if(minRequired!=null && update<minRequired &&route.getBadEndingEpisode()!=null){
-            Episode badEndingEpisode = route.getBadEndingEpisode();
-            return buildBadEndingState(route,player,badEndingEpisode,update);
-        }
+        Episode next = resolveNextEpisodeByRule(choice,update);
 
-        Episode next ;
-        boolean isPass;
 
-        if(delta<0 ){
-            //fail
-            next = choice.getNextEpisodeIfFail();
-            isPass=false;
-        }else{
-            //pass
-            next=choice.getNextEpisodeIfPass();
-            isPass=true;
-        }
-
-        if(next==null){
-            throw new CustomException( isPass ?ErrorCode.PASS_NEXT_EPISODE_NOT_FOUND:ErrorCode.FAIL_NEXT_EPISODE_NOT_FOUND);
-        }
 
         //엔딩 판정 포인트
         if(Boolean.TRUE.equals(next.getIsEnding())){
@@ -193,7 +188,19 @@ public class GameService {
     }
 
 
+    private GameStateDto handleRouteMinAffection(Route route, Player player, int updated) {
+        Integer minRequired = route.getMinAffectionRequired();
 
+        if (minRequired != null
+                && updated < minRequired
+                && route.getBadEndingEpisode() != null) {
+
+            Episode bad = route.getBadEndingEpisode();
+            return buildBadEndingState(route, player, bad, updated);
+        }
+
+        return null; // BAD 엔딩 아님
+    }
 
     private GameStateDto toGameStateDto(Episode ep,Long userId) {
         List<ChoiceDto> choiceDtos= choiceRepository.findByEpisodeId(ep.getId())
@@ -268,5 +275,43 @@ public class GameService {
                 target.getEndingLabel(),
                 endingType
         );
+    }
+
+    private Episode resolveNextEpisodeByRule(Choice choice, int update){
+        Integer threshold = choice.getThreshold();
+        Episode next;
+
+        if(threshold!=null){
+            if(update>=threshold){
+                next=choice.getNextEpisodeIfPass();
+                if(next==null){
+                    throw new CustomException(ErrorCode.PASS_NEXT_EPISODE_NOT_FOUND);
+                }
+
+                return next;
+            }else{
+                next=choice.getNextEpisodeIfFail();
+                if(next==null){
+                    throw new CustomException(ErrorCode.FAIL_NEXT_EPISODE_NOT_FOUND);
+                }
+                return next;
+            }
+        }
+
+        int delta = choice.getAffectionDelta()!=null ? choice.getAffectionDelta() : 0;
+
+        if(delta<0){
+            next=choice.getNextEpisodeIfFail();
+            if(next==null){
+                throw new CustomException(ErrorCode.FAIL_NEXT_EPISODE_NOT_FOUND);
+            }
+        }else{
+            next=choice.getNextEpisodeIfPass();
+            if(next==null){
+                throw new CustomException(ErrorCode.PASS_NEXT_EPISODE_NOT_FOUND);
+            }
+        }
+
+        return next;
     }
 }
