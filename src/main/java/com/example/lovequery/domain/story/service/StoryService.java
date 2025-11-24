@@ -25,8 +25,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class StoryService {
@@ -58,14 +56,16 @@ public class StoryService {
         Route route = routeRepository.findById(request.routeId())
                 .orElseThrow(()->new CustomException(ErrorCode.ROUTE_NOT_FOUND));
 
-        Episode episode = new Episode(route,request.text());
+        Episode episode = new Episode(route,request.text(),request.isEnding(),request.endingLabel());
 
         Episode saved = episodeRepository.save(episode);
 
         return new EpisodeResponse(
                 saved.getId(),
                 saved.getRoute().getId(),
-                saved.getText()
+                saved.getText(),
+                saved.getIsEnding(),
+                saved.getEndingLabel()
         );
     }
 
@@ -84,8 +84,8 @@ public class StoryService {
                     .orElseThrow(()->new CustomException(ErrorCode.FAIL_EPISODE_NOT_FOUND));
         }
 
-        if(request.nextEpIfSuccId()!= null){
-            nextPass=episodeRepository.findById(request.nextEpIfSuccId())
+        if(request.nextEpIfPassId()!= null){
+            nextPass=episodeRepository.findById(request.nextEpIfPassId())
                     .orElseThrow(()->new CustomException(ErrorCode.PASS_EPISODE_NOT_FOUND));
         }
 
@@ -145,13 +145,25 @@ public class StoryService {
     public RouteResponse createRoute(Long userId, CreateRouteRequest request){
         getWriterOrAdmin(userId);
 
-        GameCharacter character = gameCharacterRepository.findById(request.charId())
+        GameCharacter character = gameCharacterRepository.findById(request.characterId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CHARACTER_NOT_FOUND));
+
+        Episode badEndingep = episodeRepository.findById(request.badEndingEpId())
+                .orElseThrow(() -> new CustomException(ErrorCode.BAD_EPISODE_NOT_FOUND));
+        Episode trueEndingep= episodeRepository.findById(request.trueEndingEpId())
+                .orElseThrow(() -> new CustomException(ErrorCode.TRUE_EPISODE_NOT_FOUND));
+        Episode normalEndingep=episodeRepository.findById(request.normalEndingEpId())
+                .orElseThrow(() -> new CustomException(ErrorCode.NORMAL_EPISODE_NOT_FOUND));
+
 
         Route route = new Route(
                 character,
                 request.title(),
+                badEndingep,
+                normalEndingep,
+                trueEndingep,
                 request.minAffectionRequired(),
+                request.trueEndingThreshold(),
                 request.warningText()
         );
 
@@ -163,6 +175,7 @@ public class StoryService {
                 saved.getCharacter().getName(),
                 saved.getTitle(),
                 saved.getMinAffectionRequired(),
+                saved.getTrueEndingThreshold(),
                 saved.getWarningText()
         );
 

@@ -6,6 +6,7 @@ public record RouteResponse(
         String charName,
         String title,
         Integer minAffectionRequired,
+        Integer trueEndingThreshold,
         String warningText
 ) {
 }

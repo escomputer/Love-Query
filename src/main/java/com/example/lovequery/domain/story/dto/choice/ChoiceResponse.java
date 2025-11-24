@@ -5,7 +5,7 @@ public record ChoiceResponse(
         Long epId,
         String text,
         Long nextEpIfFailId,
-        Long nextEpIfSuccId,
+        Long nextEpIfPassId,
 
         Integer affectionDelta,
         Integer threshold

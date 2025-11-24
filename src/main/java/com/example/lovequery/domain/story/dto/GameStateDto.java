@@ -7,7 +7,11 @@ import java.util.List;
 public record GameStateDto(
         Long epId,
         String epText,
-        List<ChoiceDto> choices
+        List<ChoiceDto> choices,
+        int affection,
+        boolean isEnding,
+        String endingLabel,
+        String branch // BAD NORMAL TRUE
 ) {
 
 

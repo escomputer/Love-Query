@@ -11,6 +11,7 @@ import com.example.lovequery.domain.story.dto.character.CharacterResponse;
 import com.example.lovequery.domain.story.dto.choice.ChoiceDto;
 import com.example.lovequery.domain.story.entity.Choice;
 import com.example.lovequery.domain.story.entity.Episode;
+import com.example.lovequery.domain.story.entity.GameCharacter;
 import com.example.lovequery.domain.story.entity.Route;
 import com.example.lovequery.domain.story.repository.ChoiceRepository;
 import com.example.lovequery.domain.story.repository.EpisodeRepository;
@@ -85,7 +86,7 @@ public class GameService {
         playerAffectionRepository.findByPlayerIdAndCharacterId(player.getId(), characterId)
                 .orElseGet(()->playerAffectionRepository.save(new PlayerAffection(player,route.getCharacter(),0)));
 
-        return toGameStateDto(ep);
+        return toGameStateDto(ep,userId);
 
 
     }
@@ -102,7 +103,7 @@ public class GameService {
             throw new CustomException(ErrorCode.EPISODE_NOT_FOUND);
         }
 
-        return toGameStateDto(current);
+        return toGameStateDto(current,userId);
 
     }
 
@@ -115,32 +116,157 @@ public class GameService {
         Choice choice = choiceRepository.findById(choiceId)
                 .orElseThrow(()->new CustomException(ErrorCode.CHOICE_NOT_FOUND));
 
-        //TODO: affectionDelta, threshold,pass/fail 로직 나중에 구현
+        Episode current = player.getCurrentEpisode();
+        Route route = current.getRoute();
+        GameCharacter thisCharacter = route.getCharacter();
 
-        Episode next = choice.getNextEpisodeIfPass();
-        if(next == null){
-            throw new CustomException(ErrorCode.EPISODE_NOT_FOUND);
+        // affection 조회
+        PlayerAffection affection = playerAffectionRepository
+                .findByPlayerIdAndCharacterId(player.getId(), thisCharacter.getId())
+                .orElseGet(()->playerAffectionRepository.save(
+                        new PlayerAffection(player,thisCharacter,0)
+                ));
+
+
+        //affectionDelta 적용하기
+        int before = affection.getScore();
+        int delta = choice.getAffectionDelta()!=null ?choice.getAffectionDelta():0;
+        int update = before + delta;
+        affection.updateScore(update);
+
+        //중간 badending
+        Integer minRequired = route.getMinAffectionRequired();
+
+        if(minRequired!=null && update<minRequired &&route.getBadEndingEpisode()!=null){
+            Episode badEndingEpisode = route.getBadEndingEpisode();
+            return buildBadEndingState(route,player,badEndingEpisode,update);
         }
+
+        Episode next ;
+        boolean isPass;
+
+        if(delta<0 ){
+            //fail
+            next = choice.getNextEpisodeIfFail();
+            isPass=false;
+        }else{
+            //pass
+            next=choice.getNextEpisodeIfPass();
+            isPass=true;
+        }
+
+        if(next==null){
+            throw new CustomException( isPass ?ErrorCode.PASS_NEXT_EPISODE_NOT_FOUND:ErrorCode.FAIL_NEXT_EPISODE_NOT_FOUND);
+        }
+
+        //엔딩 판정 포인트
+        if(Boolean.TRUE.equals(next.getIsEnding())){
+            return resolveEnding(route,player,next,update);
+        }
+
 
         player.changeCurrentEpisode(next);
 
-        return toGameStateDto(next);
+
+        return toGameStateDto(next,userId);
 
     }
 
+    //호감도 부족으로 인한 badending처리
+    private GameStateDto buildBadEndingState(Route route, Player player, Episode episode, int affectionScore) {
+        player.changeCurrentEpisode(episode);
 
-
-
-    private GameStateDto toGameStateDto(Episode ep) {
-        List<ChoiceDto> choiceDtos= choiceRepository.findByEpisodeId(ep.getId())
+        List<ChoiceDto> choices = choiceRepository.findByEpisodeId(episode.getId())
                 .stream()
                 .map(ChoiceDto::from)
                 .toList();
 
         return new GameStateDto(
+                episode.getId(),
+                episode.getText(),
+                choices,
+                affectionScore,
+                true,
+                episode.getEndingLabel(),
+                "BAD"
+        );
+    }
+
+
+
+
+    private GameStateDto toGameStateDto(Episode ep,Long userId) {
+        List<ChoiceDto> choiceDtos= choiceRepository.findByEpisodeId(ep.getId())
+                .stream()
+                .map(ChoiceDto::from)
+                .toList();
+
+        //호감도 불러오기 없으면 0
+
+        Player player= playerRepository.findByUserId(userId)
+                .orElseThrow(()-> new CustomException(ErrorCode.PLAYER_NOT_FOUND));
+
+        GameCharacter character = ep.getRoute().getCharacter();
+
+        PlayerAffection affection= playerAffectionRepository.findByPlayerIdAndCharacterId(
+                player.getId(),character.getId()
+        ).orElse(null);
+
+        int score = (affection != null) ? affection.getScore() : 0;
+
+        boolean isEnding = Boolean.TRUE.equals(ep.getIsEnding());
+
+        return new GameStateDto(
                 ep.getId(),
                 ep.getText(),
-                choiceDtos
+                choiceDtos,
+                score,
+                isEnding,
+                ep.getEndingLabel(),
+                null //branch정보는 선택직후가 아니라서 없음
+        );
+    }
+
+    //엔딩 이라면 분기처리
+    private GameStateDto resolveEnding(Route route, Player player, Episode episode, int update) {
+        Episode target;
+        String endingType;
+
+        Integer minRequired = route.getMinAffectionRequired();
+        Integer trueThreshold = route.getTrueEndingThreshold();
+
+        //True
+        if(trueThreshold!=null && update>=trueThreshold && route.getTrueEndingEpisode()!=null){
+            target = route.getTrueEndingEpisode();
+            endingType ="TRUE";
+
+        } else if (minRequired!=null && update>= minRequired && route.getNormalEndingEpisode()!=null) {
+            target = route.getNormalEndingEpisode();
+            endingType ="NORMAL";
+
+        }else if (route.getBadEndingEpisode()!= null){
+            target = route.getBadEndingEpisode();
+            endingType ="BAD";
+        }else{
+            target = episode;
+            endingType=null;
+        }
+
+        player.changeCurrentEpisode(target);
+
+        List<ChoiceDto> choices = choiceRepository.findByEpisodeId(target.getId())
+                .stream()
+                .map(ChoiceDto::from)
+                .toList();
+
+        return new GameStateDto(
+                target.getId(),
+                target.getText(),
+                choices,
+                update,
+                true,
+                target.getEndingLabel(),
+                endingType
         );
     }
 }

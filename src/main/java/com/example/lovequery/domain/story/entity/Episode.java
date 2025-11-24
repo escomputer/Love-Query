@@ -40,9 +40,11 @@ public class Episode extends BaseEntity {
 
     protected Episode() {}
 
-    public Episode(Route route, String text) {
+    public Episode(Route route, String text,Boolean isEnding, String endingLabel) {
         this.route = route;
         this.text = text;
+        this.isEnding=(isEnding!=null)?isEnding:false;
+        this.endingLabel=endingLabel;
     }
 
     public void changeBackground(String bgAsset) {
