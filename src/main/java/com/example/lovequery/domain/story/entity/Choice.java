@@ -41,8 +41,6 @@ public class Choice extends BaseEntity {
     @Column(nullable = false)
     private Integer threshold = 0;        // 통과 기준 호감도 등
 
-    @Column(length = 10)
-    private String qualityTag;            // "BAD", "OK", "GOOD"
 
     @Column(length = 255)
     private String tipText;               // 최종 리포트용 힌트
@@ -57,10 +55,6 @@ public class Choice extends BaseEntity {
         this.affectionDelta = affectionDelta;
         this.threshold = threshold;
 
-    }
-
-    public void updateTag(String qualityTag) {
-        this.qualityTag = qualityTag;
     }
 
     public void updateTipText(String tipText) {
