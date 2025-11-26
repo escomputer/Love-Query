@@ -1,7 +1,11 @@
 package com.example.lovequery.domain.story.service;
 
+import com.example.lovequery.common.EndingType;
 import com.example.lovequery.common.exception.CustomException;
 import com.example.lovequery.common.exception.ErrorCode;
+import com.example.lovequery.domain.analytics.service.AnalyticsService;
+import com.example.lovequery.domain.log.entity.PlayLog;
+import com.example.lovequery.domain.log.repository.PlayLogRepository;
 import com.example.lovequery.domain.player.entity.Player;
 import com.example.lovequery.domain.player.entity.PlayerAffection;
 import com.example.lovequery.domain.player.repository.PlayerAffectionRepository;
@@ -19,12 +23,14 @@ import com.example.lovequery.domain.story.repository.GameCharacterRepository;
 import com.example.lovequery.domain.story.repository.RouteRepository;
 import com.example.lovequery.domain.user.entity.User;
 import com.example.lovequery.domain.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class GameService {
 
     private final PlayerRepository playerRepository;
@@ -34,21 +40,8 @@ public class GameService {
     private final ChoiceRepository choiceRepository;
     private final PlayerAffectionRepository playerAffectionRepository;
     private final UserRepository userRepository;
-
-    public GameService(PlayerRepository playerRepository,
-                       GameCharacterRepository characterRepository,
-                       RouteRepository routeRepository,
-                       EpisodeRepository episodeRepository,
-                       ChoiceRepository choiceRepository,
-                       PlayerAffectionRepository playerAffectionRepository, UserRepository userRepository) {
-        this.playerRepository = playerRepository;
-        this.characterRepository = characterRepository;
-        this.routeRepository = routeRepository;
-        this.episodeRepository = episodeRepository;
-        this.choiceRepository = choiceRepository;
-        this.playerAffectionRepository = playerAffectionRepository;
-        this.userRepository = userRepository;
-    }
+    private final AnalyticsService analyticsService;
+    private final PlayLogRepository playLogRepository;
 
     @Transactional(readOnly = true)
     public List<CharacterResponse> getAllCharacter() {
@@ -85,6 +78,8 @@ public class GameService {
 
         playerAffectionRepository.findByPlayerIdAndCharacterId(player.getId(), characterId)
                 .orElseGet(() -> playerAffectionRepository.save(new PlayerAffection(player, route.getCharacter(), 0)));
+
+        analyticsService.recordEpVisit(ep);
 
         return toGameStateDto(ep, userId);
 
@@ -158,6 +153,8 @@ public class GameService {
 
         affection.updateScore(update);
 
+        saveLog(player, route, current,choice,before,update);
+
         GameStateDto bad = handleRouteMinAffection(route, player, update);
         if (bad != null) return bad;
 
@@ -193,7 +190,7 @@ public class GameService {
                 affectionScore,
                 true,
                 episode.getEndingLabel(),
-                "BAD"
+                EndingType.BAD
         );
     }
 
@@ -248,7 +245,7 @@ public class GameService {
     //엔딩 이라면 분기처리
     private GameStateDto resolveEnding(Route route, Player player, Episode episode, int update) {
         Episode target;
-        String endingType;
+        EndingType endingType;
 
         Integer minRequired = route.getMinAffectionRequired();
         Integer trueThreshold = route.getTrueEndingThreshold();
@@ -256,21 +253,22 @@ public class GameService {
         //True
         if (trueThreshold != null && update >= trueThreshold && route.getTrueEndingEpisode() != null) {
             target = route.getTrueEndingEpisode();
-            endingType = "TRUE";
+            endingType = EndingType.TRUE;
 
         } else if (minRequired != null && update >= minRequired && route.getNormalEndingEpisode() != null) {
             target = route.getNormalEndingEpisode();
-            endingType = "NORMAL";
+            endingType = EndingType.NORMAL;
 
         } else if (route.getBadEndingEpisode() != null) {
             target = route.getBadEndingEpisode();
-            endingType = "BAD";
+            endingType = EndingType.BAD;
         } else {
             target = episode;
             endingType = null;
         }
 
         player.changeCurrentEpisode(target);
+        analyticsService.recordEndingClear(target);
 
         List<ChoiceDto> choices = choiceRepository.findByEpisodeId(target.getId())
                 .stream()
@@ -291,6 +289,7 @@ public class GameService {
     private Episode resolveNextEpisodeByRule(Choice choice, int update) {
         Integer threshold = choice.getThreshold();
         Episode next;
+        boolean passBranch;
 
         if (threshold != null) {
             if (update >= threshold) {
@@ -299,13 +298,13 @@ public class GameService {
                     throw new CustomException(ErrorCode.PASS_NEXT_EPISODE_NOT_FOUND);
                 }
 
-                return next;
+                passBranch = true;
             } else {
                 next = choice.getNextEpisodeIfFail();
                 if (next == null) {
                     throw new CustomException(ErrorCode.FAIL_NEXT_EPISODE_NOT_FOUND);
                 }
-                return next;
+                passBranch = false;
             }
         }
 
@@ -316,13 +315,33 @@ public class GameService {
             if (next == null) {
                 throw new CustomException(ErrorCode.FAIL_NEXT_EPISODE_NOT_FOUND);
             }
+            passBranch=false;
         } else {
             next = choice.getNextEpisodeIfPass();
             if (next == null) {
                 throw new CustomException(ErrorCode.PASS_NEXT_EPISODE_NOT_FOUND);
             }
+            passBranch = true;
         }
 
+        analyticsService.recordChoice(choice,passBranch);
+        analyticsService.recordEpVisit(next);
         return next;
+    }
+
+    private void saveLog(Player player, Route route, Episode episode,Choice choice, int affectionBefore, int affectionAfter) {
+        String sessionId = player.getId()+"-"+route.getId();
+
+        PlayLog playLog = new PlayLog(
+                sessionId,
+                player,
+                route,
+                episode,
+                choice,
+                affectionBefore,
+                affectionAfter
+        );
+
+        playLogRepository.save(playLog);
     }
 }

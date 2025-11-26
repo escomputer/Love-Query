@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class StoryService {
@@ -183,4 +185,64 @@ public class StoryService {
         );
 
     }
+
+    //조회 메서드들
+
+    @Transactional(readOnly = true)
+    public List<RouteResponse> getRoutesByCharacter(Long userId, Long characterId) {
+        getWriterOrAdmin(userId);
+        GameCharacter character = gameCharacterRepository.findById(characterId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHARACTER_NOT_FOUND));
+
+        List<Route> route= routeRepository.findByCharacterId(character.getId());
+
+        return route.stream()
+                .map(r-> new RouteResponse(
+                        r.getId(),
+                        r.getCharacter().getId(),
+                        r.getCharacter().getName(),
+                        r.getTitle(),
+                        r.getMinAffectionRequired(),
+                        r.getTrueEndingThreshold(),
+                        r.getWarningText()
+                )).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<EpisodeResponse> getEpisodesByRoute(Long userId, Long routeId){
+        getWriterOrAdmin(userId);
+
+        Route route = routeRepository.findById(routeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTE_NOT_FOUND));
+
+        return episodeRepository.findByRouteIdOrderByIdAsc(routeId).stream()
+                .map(ep-> new EpisodeResponse(
+                        ep.getId(),
+                        routeId,
+                        ep.getText(),
+                        ep.getIsEnding(),
+                        ep.getEndingLabel()
+                )).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChoiceResponse> getChoicesByEpisode(Long userId, Long epId){
+        getWriterOrAdmin(userId);
+
+        Episode ep = episodeRepository.findById(epId)
+                .orElseThrow(() -> new CustomException(ErrorCode.EPISODE_NOT_FOUND));
+
+        return choiceRepository.findByEpisodeId(epId).stream()
+                .map(ch-> new ChoiceResponse(
+                        ch.getId(),
+                        epId,
+                        ch.getText(),
+                        ch.getNextEpisodeIfFail()!=null?ch.getNextEpisodeIfFail().getId():null,
+                        ch.getNextEpisodeIfPass()!=null?ch.getNextEpisodeIfPass().getId():null,
+                        ch.getAffectionDelta(),
+                        ch.getThreshold(),
+                        ch.getMinRequiredAffection()
+                )).toList();
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.example.lovequery.domain.story.dto;
 
+import com.example.lovequery.common.EndingType;
 import com.example.lovequery.domain.story.dto.choice.ChoiceDto;
 
 import java.util.List;
@@ -11,7 +12,7 @@ public record GameStateDto(
         int affection,
         boolean isEnding,
         String endingLabel,
-        String branch // BAD NORMAL TRUE
+        EndingType branch // BAD NORMAL TRUE
 ) {
 
 

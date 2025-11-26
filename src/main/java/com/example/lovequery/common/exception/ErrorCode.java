@@ -30,6 +30,7 @@ public enum ErrorCode {
     ADMIN_REQUEST_NO(HttpStatus.BAD_REQUEST,"관리자 역할은 신청할 수 없습니다."),
     NO_PERMISSION(HttpStatus.BAD_REQUEST,"허가되지 않은 권한입니다."),
     ROLE_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND,"요청이 없습니다."),
+    PLAYER_LOG_NOT_FOUND(HttpStatus.NOT_FOUND,"로그를 찾을 수 없습니다."),
     INVALID_ROLE_REQUEST(HttpStatus.BAD_REQUEST,"PENDING 상태의 요청이 아닙니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 

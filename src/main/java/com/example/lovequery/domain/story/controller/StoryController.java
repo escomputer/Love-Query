@@ -65,6 +65,16 @@ public class StoryController {
         return storyService.createCharacter(userId,req);
     }
 
+    /**
+     * 특정 캐릭터의 route리스트 조회
+     */
+    @GetMapping("/characters/{characterId}/routes")
+    public List<RouteResponse> getRoutesByCharacter(HttpSession session, @PathVariable Long characterId){
+        Long userId = getUserId(session);
+
+        return storyService.getRoutesByCharacter(userId,characterId);
+    }
+
 
 
     /**
@@ -75,5 +85,29 @@ public class StoryController {
         Long userId = getUserId(session);
         return storyService.createRoute(userId,req);
     }
+
+    /**
+     * Route별 Episode 리스트 조회
+     */
+    @GetMapping("/routes/{routeId}/episodes")
+    public List<EpisodeResponse> getEpisodesByRoute(@PathVariable Long routeId,
+                                                    HttpSession session) {
+
+        Long userId = getUserId(session);
+        return storyService.getEpisodesByRoute(userId, routeId);
+    }
+
+    /**
+     * Episode별 Choice 리스트 조회
+     */
+    @GetMapping("/episodes/{epId}/choices")
+    public List<ChoiceResponse> getChoicesByEpisode(@PathVariable Long epId,
+                                                    HttpSession session) {
+
+        Long userId = getUserId(session);
+        return storyService.getChoicesByEpisode(userId, epId);
+    }
+
+
 }
 

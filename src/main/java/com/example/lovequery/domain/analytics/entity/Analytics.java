@@ -5,6 +5,7 @@ import com.example.lovequery.common.BaseEntity;
 import com.example.lovequery.domain.story.entity.Choice;
 import com.example.lovequery.domain.story.entity.Episode;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 @Entity
 @Table(
@@ -13,6 +14,7 @@ import jakarta.persistence.*;
                 @Index(name = "idx_analytics_kind_updated", columnList = "kind, updatedAt")
         }
 )
+@Getter
 public class Analytics extends BaseEntity {
 
     @Id
@@ -37,4 +39,43 @@ public class Analytics extends BaseEntity {
     private Long clearCount;  // 엔딩 도달 횟수
 
     protected Analytics() {}
+
+    private Analytics(AnalyticsKind kind, Choice choice, Episode episode) {
+        this.kind = kind;
+        this.choice = choice;
+        this.episode = episode;
+        this.pickCount = 0L;
+        this.passCount = 0L;
+        this.visitCount = 0L;
+        this.clearCount = 0L;
+    }
+
+    // 에피소드용
+    public static Analytics createForEpisode(Episode episode) {
+        return new Analytics(AnalyticsKind.EPISODE, null, episode);
+    }
+
+    // 선택지용
+    public static Analytics createForChoice(Choice choice) {
+        return new Analytics(AnalyticsKind.CHOICE, choice, null);
+    }
+
+    public void increaseVisit() {
+        if (this.visitCount == null) this.visitCount = 0L;
+        this.visitCount++;
+    }
+
+    public void increaseClear() {
+        if (this.clearCount == null) this.clearCount = 0L;
+        this.clearCount++;
+    }
+
+    public void increasePick(boolean pass) {
+        if (this.pickCount == null) this.pickCount = 0L;
+        this.pickCount++;
+        if (pass) {
+            if (this.passCount == null) this.passCount = 0L;
+            this.passCount++;
+        }
+    }
 }
