@@ -39,4 +39,18 @@ public class GameCharacter {
         this.affinityCap = affinityCap;
     }
 
+    public void update(String name, String gender, String personality, Integer affinityCap) {
+        this.name = name;
+        this.gender = gender;
+        this.personality = personality;
+        this.affinityCap = affinityCap;
+    }
+
+    public void increasePopularity() {
+        if (this.popularityScore == null) {
+            this.popularityScore = 0;
+        }
+        this.popularityScore++;
+    }
+
 }

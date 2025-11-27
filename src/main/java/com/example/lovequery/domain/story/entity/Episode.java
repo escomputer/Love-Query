@@ -1,6 +1,7 @@
 package com.example.lovequery.domain.story.entity;
 
 import com.example.lovequery.common.BaseEntity;
+import com.example.lovequery.common.EndingType;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -9,6 +10,12 @@ import lombok.Getter;
         name = "episodes",
         indexes = {
                 @Index(name = "idx_episodes_route_id", columnList = "route_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_route_ending_type",
+                        columnNames = {"route_id", "ending_type"}
+                )
         }
 )
 @Getter
@@ -18,46 +25,36 @@ public class Episode extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY,optional = false)
-    @JoinColumn(name="route_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "route_id")
     private Route route;
 
     @Lob
     @Column(nullable = false)
     private String text;
 
-    @Column(length = 255)
-    private String bgAsset;
-
-    @Column(length = 255)
-    private String musicAsset;
-
     @Column(nullable = false)
     private Boolean isEnding = false;
 
-    @Column(length = 100)
-    private String endingLabel;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private EndingType endingType;
 
-    protected Episode() {}
+    protected Episode() {
+    }
 
-    public Episode(Route route, String text,Boolean isEnding, String endingLabel) {
+    public Episode(Route route, String text, Boolean isEnding, EndingType endingType) {
         this.route = route;
         this.text = text;
-        this.isEnding=(isEnding!=null)?isEnding:false;
-        this.endingLabel=endingLabel;
+        this.isEnding = (isEnding != null) ? isEnding : false;
+        this.endingType = endingType;
     }
 
-    public void changeBackground(String bgAsset) {
-        this.bgAsset = bgAsset;
-    }
 
-    public void changeMusic(String musicAsset) {
-        this.musicAsset = musicAsset;
-    }
-
-    public void markAsEnding(String endingLabel) {
-        this.isEnding = true;
-        this.endingLabel = endingLabel;
+    public void update(String text, Boolean isEnding, EndingType endingType) {
+        this.text = text;
+        this.isEnding = isEnding != null ? isEnding : false;
+        this.endingType = endingType;
     }
 
 }

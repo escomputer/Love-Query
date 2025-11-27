@@ -11,4 +11,8 @@ public interface PlayLogRepository extends JpaRepository<PlayLog,Integer> {
     List<PlayLog> findByRouteIdAndPlayerIdAndSessionIdOrderByCreatedAtAsc(Long routeId,Long playerId,String sessionId);
 
     Optional<PlayLog> findTopByPlayerIdOrderByCreatedAtDesc(Long playerId);
+
+    void deleteByChoiceId(Long choiceId);
+    void deleteByEpisodeId(Long episodeId);
+    void deleteByRouteId(Long routeId); // 루트 삭제 시 통삭제용
 }

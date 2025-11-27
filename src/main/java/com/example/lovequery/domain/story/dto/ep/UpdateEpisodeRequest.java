@@ -2,8 +2,7 @@ package com.example.lovequery.domain.story.dto.ep;
 
 import com.example.lovequery.common.EndingType;
 
-public record EpisodeResponse(
-        Long id,
+public record UpdateEpisodeRequest(
         Long routeId,
         String text,
         Boolean isEnding,

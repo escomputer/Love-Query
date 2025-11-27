@@ -25,19 +25,10 @@ public class Route extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String title;
 
-    // 나중에 bad ending episode FK 연결할 수 있음
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bad_ending_ep_id")
-    private Episode badEndingEpisode;
+    @Column(name = "start_episode_id")
+    private Long startEpisodeId;
 
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "normal_ending_ep_id")
-    private Episode normalEndingEpisode;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "true_ending_ep_id")
-    private Episode trueEndingEpisode;
 
     @Column(nullable = false)
     private Integer minAffectionRequired;  // 엔딩 진입 최소 호감도
@@ -55,19 +46,21 @@ public class Route extends BaseEntity {
 
     public Route(GameCharacter character,
                  String title,
-                 Episode badEndingEpisode,
-                 Episode normalEndingEpisode,
-                 Episode trueEndingEpisode,
                  Integer minAffectionRequired,
                  Integer trueEndingThreshold,
                  String warningText) {
 
         this.character = character;
         this.title = title;
-        this.badEndingEpisode = badEndingEpisode;
-        this.normalEndingEpisode = normalEndingEpisode;
-        this.trueEndingEpisode = trueEndingEpisode;
         this.minAffectionRequired = minAffectionRequired;
+        this.trueEndingThreshold = trueEndingThreshold;
+        this.warningText = warningText;
+    }
+
+    public void update(String title, Integer minAffectionRequired, Long startEpisodeId,Integer trueEndingThreshold, String warningText) {
+        this.title = title;
+        this.minAffectionRequired = minAffectionRequired;
+        this.startEpisodeId = startEpisodeId;
         this.trueEndingThreshold = trueEndingThreshold;
         this.warningText = warningText;
     }

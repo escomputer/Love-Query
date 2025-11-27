@@ -51,10 +51,10 @@ public class PlayerReportService {
         Route route = logs.get(0).getRoute();
 
         PlayLog finalLog = logs.get(logs.size() - 1);
+        Episode episode = finalLog.getEpisode();
         int finalAffection = finalLog.getAffectionAfter();
 
-        EndingType endingType = resolveEndingtype(route, finalAffection);
-        String endingLabel = resolveEndingLabel(route, endingType);
+        EndingType endingType = episode.getEndingType();
 
         List<PlayStepDto> steps = logs.stream()
                 .sorted(Comparator.comparing(PlayLog::getCreatedAt))
@@ -78,42 +78,14 @@ public class PlayerReportService {
                 route.getTitle(),
                 route.getCharacter().getName(),
                 finalAffection,
-                endingType,
-                endingLabel
+                endingType
                 ,steps
         );
 
     }
 
-    private EndingType resolveEndingtype(Route route, int affection) {
-        Integer minRequired = route.getMinAffectionRequired();
-        Integer trueThreshold = route.getTrueEndingThreshold();
 
 
-        if (trueThreshold != null && affection >= trueThreshold && route.getTrueEndingEpisode() != null) {
-            return EndingType.TRUE;
-        } else if (minRequired != null && affection >= minRequired && route.getNormalEndingEpisode() != null) {
-            return EndingType.NORMAL;
-        } else if (route.getBadEndingEpisode() != null) {
-            return EndingType.BAD;
-        } else {
-            return null;
-        }
-    }
 
-    private String resolveEndingLabel(Route route, EndingType endingType) {
-        if (endingType == null) {
-            return null;
-        }
-
-        return switch (endingType) {
-            case TRUE -> route.getTrueEndingEpisode()!=null ?
-                        route.getTrueEndingEpisode().getEndingLabel():null;
-            case BAD -> route.getBadEndingEpisode()!=null ?
-                        route.getBadEndingEpisode().getEndingLabel():null;
-            case NORMAL ->  route.getNormalEndingEpisode()!=null ?
-                        route.getNormalEndingEpisode().getEndingLabel():null;
-        };
-    }
 
 }

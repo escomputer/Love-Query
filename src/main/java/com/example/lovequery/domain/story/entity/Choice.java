@@ -64,4 +64,12 @@ public class Choice extends BaseEntity {
         this.tipText = tipText;
     }
 
+    public void update(String text, Episode nextPass, Episode nextFail, Integer threshold, Integer affectionDelta, Integer minRequiredAffection) {
+        this.text = text;
+        this.nextEpisodeIfPass = nextPass;
+        this.nextEpisodeIfFail = nextFail;
+        this.threshold = threshold;
+        this.affectionDelta = affectionDelta;
+        this.minRequiredAffection = minRequiredAffection;
+    }
 }

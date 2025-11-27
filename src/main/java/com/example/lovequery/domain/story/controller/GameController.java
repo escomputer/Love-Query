@@ -30,14 +30,14 @@ public class GameController {
      * 게임시작/캐릭터 선택
      */
     @PostMapping("/start")
-    public GameStateDto startGame(@RequestParam Long characterId, HttpSession session){
+    public GameStateDto startGame(@RequestParam Long routeId, HttpSession session){
         Long userId = (Long) session.getAttribute("userId");
 
         if(userId == null){
             throw new CustomException(ErrorCode.NO_PERMISSION);
         }
 
-        return gameService.startGame(userId,characterId);
+        return gameService.startGame(userId,routeId);
     }
 
     /**
@@ -65,6 +65,16 @@ public class GameController {
 
         return gameService.choose(userId, choiceId);
     }
+
+    @PostMapping("/reset")
+    public void resetGame(HttpSession session){
+        Long userId = (Long) session.getAttribute("userId");
+        if(userId == null){
+            throw new CustomException(ErrorCode.NO_PERMISSION);
+        }
+        gameService.resetRoute(userId);
+    }
+
 
 
 }

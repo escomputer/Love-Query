@@ -11,7 +11,6 @@ public record GameStateDto(
         List<ChoiceDto> choices,
         int affection,
         boolean isEnding,
-        String endingLabel,
         EndingType branch // BAD NORMAL TRUE
 ) {
 

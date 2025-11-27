@@ -31,8 +31,12 @@ let writerState = {
     routeId: null,
     routeTitle: '',
     epId: null,
-    epText: ''
+    epText: '',
+    routes: [],
+    episodes: []
 };
+
+let editingEpId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     checkLogin();
@@ -129,13 +133,57 @@ function switchView(viewId) {
     document.querySelectorAll('.view-panel').forEach(el => el.style.display = 'none');
     document.getElementById(viewId).style.display = 'block';
 
-    // 뷰 진입 시 초기 데이터 로드
+    // Admin 뷰 진입 시 데이터 자동 로드
     if(viewId === 'admin-view') {
         loadRoleRequests();
         loadAnalyticsRoutes();
+        loadAdminLogs(); // [추가] 로그 로드 호출!
     }
     if(viewId === 'writer-view') {
-        resetWriterView('char'); // 작가 뷰 초기화 (캐릭터 목록부터)
+        resetWriterView('char');
+    }
+}
+
+async function loadAdminLogs() {
+    const tbody = document.querySelector('#admin-log-table tbody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">로딩 중...</td></tr>';
+
+    try {
+        // ReportForBalanceController에 만든 /logs API 호출
+        const logs = await api('/admin/analytics/logs');
+
+        tbody.innerHTML = '';
+        if (!logs || logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">기록된 로그가 없습니다.</td></tr>';
+            return;
+        }
+
+        logs.forEach(log => {
+            const tr = document.createElement('tr');
+
+            // 날짜 포맷팅 (YYYY-MM-DD HH:mm:ss)
+            const date = new Date(log.createdAt).toLocaleString();
+
+            // 액션별 스타일 클래스 지정
+            let badgeClass = '';
+            if (log.action === 'CREATE') badgeClass = 'badge-create';
+            else if (log.action === 'UPDATE') badgeClass = 'badge-update';
+            else if (log.action === 'DELETE') badgeClass = 'badge-delete';
+
+            tr.innerHTML = `
+                <td>${date}</td>
+                <td>${log.adminId}</td>
+                <td class="${badgeClass}">${log.action}</td>
+                <td>${log.targetType}</td>
+                <td>${log.targetId}</td>
+                <td>${log.description}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch(err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">로그 로드 실패: ${err.message}</td></tr>`;
     }
 }
 
@@ -228,9 +276,14 @@ async function loadWriterCharacters() {
             const li = document.createElement('li');
             li.innerHTML = `
                 <div><strong>${c.name}</strong> <small>(${c.gender}, ${c.personality})</small></div>
-                <span>ID: ${c.id} &gt;</span>
+                <div>
+                    <span style="font-size:0.8em; color:#888; margin-right:10px; cursor:pointer;">ID: ${c.id} &gt;</span>
+                    <button class="btn-sm" style="background:#dc3545; color:white;" onclick="deleteCharacter(event, ${c.id})">🗑️</button>
+                </div>
             `;
-            li.onclick = () => {
+            // 클릭 시 이동 (버튼 제외)
+            li.onclick = (e) => {
+                if(e.target.tagName === 'BUTTON') return;
                 writerState.charId = c.id;
                 writerState.charName = c.name;
                 resetWriterView('route');
@@ -238,6 +291,16 @@ async function loadWriterCharacters() {
             list.appendChild(li);
         });
     } catch(e) { console.error(e); }
+}
+
+async function deleteCharacter(event, charId) {
+    event.stopPropagation();
+    if(!confirm("캐릭터를 삭제하시겠습니까?\n포함된 모든 루트와 에피소드가 함께 삭제됩니다!")) return;
+    try {
+        await api(`/story/characters/${charId}`, 'DELETE');
+        alert("삭제되었습니다.");
+        loadWriterCharacters(); // 목록 갱신
+    } catch(e) { alert(e.message); }
 }
 
 document.getElementById('form-create-char').addEventListener('submit', async (e) => {
@@ -262,15 +325,21 @@ async function loadWriterRoutes(charId) {
     list.innerHTML = '';
     try {
         const routes = await api(`/story/characters/${charId}/routes`);
+
+        writerState.routes = routes;
         if(routes.length === 0) list.innerHTML = '<li style="cursor:default; background:#eee;">생성된 루트가 없습니다.</li>';
 
         routes.forEach(r => {
             const li = document.createElement('li');
             li.innerHTML = `
                 <div><strong>${r.title}</strong></div>
-                <span>ID: ${r.id} &gt;</span>
+                <div>
+                    <span style="font-size:0.8em; color:#888; margin-right:10px; cursor:pointer;">ID: ${r.id} &gt;</span>
+                    <button class="btn-sm" style="background:#dc3545; color:white;" onclick="deleteRoute(event, ${r.id})">🗑️</button>
+                </div>
             `;
-            li.onclick = () => {
+            li.onclick = (e) => {
+                if(e.target.tagName === 'BUTTON') return;
                 writerState.routeId = r.id;
                 writerState.routeTitle = r.title;
                 resetWriterView('ep');
@@ -280,6 +349,16 @@ async function loadWriterRoutes(charId) {
     } catch(e) { console.error(e); }
 }
 
+// [추가] 루트 삭제 함수
+async function deleteRoute(event, routeId) {
+    event.stopPropagation();
+    if(!confirm("루트를 삭제하시겠습니까?\n포함된 모든 에피소드가 함께 삭제됩니다!")) return;
+    try {
+        await api(`/story/routes/${routeId}`, 'DELETE');
+        alert("삭제되었습니다.");
+        loadWriterRoutes(writerState.charId); // 목록 갱신
+    } catch(e) { alert(e.message); }
+}
 document.getElementById('form-create-route').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -301,29 +380,163 @@ document.getElementById('form-create-route').addEventListener('submit', async (e
 });
 
 // --- 2-3. 에피소드 관리 ---
+// [교체] 에피소드 목록 로드 (수정 버튼 포함)
 async function loadWriterEpisodes(routeId) {
     const container = document.getElementById('list-ep');
     container.innerHTML = '';
+
     try {
+        // 1. API 호출
         const eps = await api(`/story/routes/${routeId}/episodes`);
-        if(eps.length === 0) container.innerHTML = '<p style="padding:10px; color:#999;">에피소드가 없습니다.</p>';
+
+        // 2. 수정 기능을 위해 상태에 저장해둠
+        writerState.episodes = eps;
+
+        if(eps.length === 0) {
+            container.innerHTML = '<p style="padding:10px; color:#999;">에피소드가 없습니다.</p>';
+            return;
+        }
 
         eps.forEach(ep => {
             const div = document.createElement('div');
+            // 스타일 클래스: 엔딩이면 테두리 색 다르게
             div.className = `ep-card ${ep.isEnding ? 'ending' : ''}`;
+
+            // HTML 구성: [EDIT] 버튼 추가
             div.innerHTML = `
-                <div style="font-weight:bold; margin-bottom:5px;">EP #${ep.id}</div>
-                <div style="font-size:0.85em; color:#555;">${ep.text.substring(0, 40)}...</div>
-                ${ep.isEnding ? `<div style="color:red; font-size:0.8em; margin-top:5px;">[${ep.endingType}]</div>` : ''} 
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:5px;">
+                    <span style="font-weight:bold;">EP #${ep.id}</span>
+                    <button class="btn-sm" style="background:#00b894; color:white; margin-right:5px;" onclick="setStartEpisode(event, ${ep.id})">🚩시작점</button>
+                    <button class="btn-sm" style="background:#ffc107; color:#333; border:none; padding:2px 8px; border-radius:4px; font-size:0.8em; cursor:pointer;" onclick="startEditEpisode(event, ${ep.id})">✏️수정</button>
+                    <button class="btn-sm" style="background:#dc3545; color:white;" onclick="deleteEpisode(event, ${ep.id})">🗑️삭제</button>
+                </div>
+                <div style="font-size:0.85em; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${ep.text}
+                </div>
+                ${ep.isEnding ? `<div style="color:red; font-size:0.8em; margin-top:5px; font-weight:bold;">[${ep.endingType}]</div>` : ''}
             `;
+
+            // 카드 본문 클릭 시: 선택지 관리로 이동 (드릴다운)
             div.onclick = () => {
                 writerState.epId = ep.id;
                 writerState.epText = ep.text;
                 resetWriterView('choice');
             };
+
             container.appendChild(div);
         });
     } catch(e) { console.error(e); }
+}
+
+async function setStartEpisode(event, epId) {
+    event.stopPropagation();
+    if(!confirm(`EP #${epId}를 이 루트의 시작점으로 설정하시겠습니까?`)) return;
+
+    try {
+        // 1. 아까 저장해둔 목록에서 현재 루트 정보를 찾습니다.
+        const currentRoute = writerState.routes.find(r => r.id === writerState.routeId);
+
+        if (!currentRoute) {
+            throw new Error("루트 정보를 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.");
+        }
+
+        // 2. 기존 정보는 그대로 유지하고, startEpisodeId만 변경합니다.
+        const updateData = {
+            title: currentRoute.title,
+            minAffectionRequired: currentRoute.minAffectionRequired,
+            trueEndingThreshold: currentRoute.trueEndingThreshold,
+            warningText: currentRoute.warningText,
+
+            startEpisodeId: epId // [변경] 이것만 바꿈!
+        };
+
+        // 3. 업데이트 요청 전송
+        await api(`/story/routes/${writerState.routeId}`, 'PUT', updateData);
+
+        alert(`EP #${epId}가 시작점으로 설정되었습니다.`);
+
+        // (선택) 목록을 갱신해서 변경 사항을 다시 받아오려면:
+        // loadWriterRoutes(writerState.charId);
+
+    } catch(e) { alert(e.message); }
+}
+
+async function deleteEpisode(event, epId) {
+    event.stopPropagation();
+    if(!confirm("정말 삭제하시겠습니까? (연결된 선택지도 모두 삭제됩니다)")) return;
+
+    try {
+        await api(`/story/episodes/${epId}`, 'DELETE');
+        alert("삭제되었습니다.");
+        loadWriterEpisodes(writerState.routeId); // 목록 갱신
+    } catch(e) { alert(e.message); }
+}
+
+// [추가] 수정 모드 진입
+function startEditEpisode(event, epId) {
+    event.stopPropagation(); // 부모(카드) 클릭 이벤트 전파 방지 -> 페이지 이동 막음
+
+    // 1. 저장해둔 목록에서 데이터 찾기
+    const ep = writerState.episodes.find(e => e.id === epId);
+    if (!ep) return;
+
+    // 2. UI 업데이트 (수정 모드)
+    editingEpId = epId;
+    const form = document.getElementById('form-create-ep');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    // 버튼 스타일 변경
+    submitBtn.innerText = "에피소드 수정 저장";
+    submitBtn.style.background = "#ffc107"; // 노란색 (Warning 느낌)
+    submitBtn.style.color = "#000";
+
+    // 취소 버튼 추가 (없을 때만)
+    if (!document.getElementById('btn-cancel-ep')) {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'btn-cancel-ep';
+        cancelBtn.type = 'button';
+        cancelBtn.innerText = "취소";
+        cancelBtn.style.marginLeft = "10px";
+        cancelBtn.style.background = "#6c757d"; // 회색
+        cancelBtn.onclick = cancelEditEpisode;
+        form.appendChild(cancelBtn);
+    }
+
+    // 3. 폼에 데이터 채우기
+    form.querySelector('[name=text]').value = ep.text;
+
+    const chkEnding = form.querySelector('[name=isEnding]');
+    chkEnding.checked = ep.isEnding;
+
+    // 엔딩 여부에 따라 드롭다운 표시/숨김 처리
+    toggleEndingSelect();
+
+    if (ep.isEnding) {
+        form.querySelector('[name=endingType]').value = ep.endingType;
+    }
+
+    // 4. 입력 폼으로 스크롤 이동
+    form.scrollIntoView({ behavior: 'smooth' });
+}
+
+// [추가] 수정 취소
+function cancelEditEpisode() {
+    editingEpId = null;
+    const form = document.getElementById('form-create-ep');
+
+    // 폼 초기화
+    form.reset();
+    toggleEndingSelect(); // 드롭다운 숨기기
+
+    // 버튼 원상복구
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.innerText = "에피소드 추가";
+    submitBtn.style.background = ""; // 원래 색으로
+    submitBtn.style.color = "";
+
+    // 취소 버튼 제거
+    const cancelBtn = document.getElementById('btn-cancel-ep');
+    if (cancelBtn) cancelBtn.remove();
 }
 
 function toggleEndingSelect() {
@@ -339,27 +552,41 @@ function toggleEndingSelect() {
         sel.value = "";                     // 선택값 초기화
     }
 }
+// [교체] 에피소드 생성/수정 폼 제출 이벤트
 document.getElementById('form-create-ep').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const isEnding = fd.get('isEnding') === 'on';
 
-    // 백엔드의 CreateEpisodeRequest DTO에 맞춰 데이터 구성
     const data = {
-        routeId: writerState.routeId,
+        routeId: writerState.routeId, // 생성 시 필요 (수정 시엔 무시됨)
         text: fd.get('text'),
         isEnding: isEnding,
-        // 체크되어 있으면 선택된 Enum 값("TRUE", "BAD" 등), 아니면 null 전송
         endingType: isEnding ? fd.get('endingType') : null
     };
 
-    try {
-        await api('/story/episodes', 'POST', data);
+    // 유효성 검사
+    if (isEnding && !data.endingType) {
+        alert("엔딩 타입을 선택해주세요.");
+        return;
+    }
 
-        // 성공 후 초기화
-        e.target.reset();
-        toggleEndingSelect(); // UI 상태도 다시 숨김으로 리셋
-        loadWriterEpisodes(writerState.routeId); // 목록 갱신
+    try {
+        if (editingEpId) {
+            // [수정 모드] PUT 요청
+            await api(`/story/episodes/${editingEpId}`, 'PUT', data);
+            alert("수정되었습니다.");
+            cancelEditEpisode(); // 수정 모드 종료 및 폼 초기화
+        } else {
+            // [생성 모드] POST 요청
+            await api('/story/episodes', 'POST', data);
+            alert("생성되었습니다.");
+            e.target.reset();
+            toggleEndingSelect();
+        }
+
+        // 목록 갱신
+        loadWriterEpisodes(writerState.routeId);
 
     } catch(err) {
         alert(err.message);
@@ -376,28 +603,52 @@ async function loadWriterChoices(epId) {
 
         choices.forEach(ch => {
             const li = document.createElement('li');
-            // threshold 유무에 따라 표시 내용 다르게
-            let branchInfo = '';
-            if (ch.threshold) {
-                branchInfo = `<span style="color:purple;">⚖️ 기준 ${ch.threshold}</span> → (성공: EP.${ch.nextEpIfPassId} / 실패: EP.${ch.nextEpIfFailId})`;
-            } else {
-                branchInfo = `→ EP.${ch.nextEpIfPassId}`;
-            }
+            li.style.cursor = 'default';
+
+            // ... (기존 내용 표시 로직) ...
+            let branchInfo = ch.threshold ? `⚖️ ${ch.threshold}...` : `→ EP.${ch.nextEpIfPassId}`;
 
             li.innerHTML = `
-                <div>
+                <div style="flex:1;">
                     <strong>${ch.text}</strong>
-                    <div style="font-size:0.85em; color:#666; margin-top:4px;">
-                        ${ch.minRequiredAffection ? `🔒 잠금 ${ch.minRequiredAffection} | ` : ''}
-                        ❤️ ${ch.affectionDelta > 0 ? '+' : ''}${ch.affectionDelta} | 
-                        ${branchInfo}
-                    </div>
+                    <div style="font-size:0.85em; color:#666;">${branchInfo}</div>
                 </div>
+                <button class="btn-sm" style="background:#dc3545; color:white;" onclick="deleteChoice(event, ${ch.id})">🗑️</button>
             `;
             list.appendChild(li);
         });
     } catch(e) { console.error(e); }
 }
+
+// [추가] 선택지 삭제 함수
+async function deleteChoice(event, choiceId) {
+    event.stopPropagation();
+    if(!confirm("이 선택지를 삭제하시겠습니까?")) return;
+    try {
+        await api(`/story/choices/${choiceId}`, 'DELETE');
+        alert("삭제되었습니다.");
+        loadWriterChoices(writerState.epId); // 목록 갱신
+    } catch(e) { alert(e.message); }
+}
+document.getElementById('btn-reset-game').addEventListener('click', async () => {
+    if (!confirm('정말로 게임을 리셋하시겠습니까?\n현재 진행 중인 데이터가 초기화됩니다.')) {
+        return;
+    }
+
+    try {
+        // 1. 새로 만드신 리셋 API 호출
+        await api('/game/reset', 'POST');
+
+        alert('게임이 초기화되었습니다. 캐릭터 선택 화면으로 이동합니다.');
+
+        // 2. 화면 초기화 (게임 화면 닫기 & 캐릭터 목록 다시 로드)
+        resetGameUI();
+        loadCharacters();
+
+    } catch (err) {
+        alert('리셋 실패: ' + err.message);
+    }
+});
 
 document.getElementById('form-create-choice').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -429,33 +680,90 @@ document.getElementById('form-create-choice').addEventListener('submit', async (
 // ==========================================
 
 async function loadCharacters() {
+    // 화면 초기화: 캐릭터 선택만 보이고 나머지는 숨김
+    document.getElementById('char-selection-screen').style.display = 'block';
+    document.getElementById('route-select-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('report-screen').style.display = 'none';
+
     try {
         const chars = await api('/game/characters');
         const container = document.getElementById('char-list');
         container.innerHTML = '';
+
+
         chars.forEach(c => {
             const div = document.createElement('div');
             div.className = 'char-card';
             div.innerHTML = `
                 <h4>${c.name}</h4>
-                <p>${c.gender} / ${c.personality}</p>
-                <button onclick="startGame(${c.id})">플레이 시작</button>
+                <p style="font-size:0.9em; color:#555;">${c.gender} / ${c.personality}</p>
+                <p style="font-weight:bold; color:#e91e63; margin: 5px 0;">
+                    🔥 인기: ${c.popularityScore}
+                </p>
+                <button onclick="showPlayerRoutes(${c.id})">선택하기</button>
             `;
             container.appendChild(div);
         });
 
-        // 현재 진행중인 게임 확인
+        // 진행 중인 게임이 있으면 바로 게임 화면으로 (기존 로직 유지)
         try {
             const current = await api('/game/current');
             renderGameScreen(current);
-        } catch(e) { /* 진행중 게임 없음 */ }
+            document.getElementById('char-selection-screen').style.display = 'none'; // 게임 중이면 숨김
+        } catch(e) {}
 
     } catch(err) { console.error(err); }
 }
 
-async function startGame(charId) {
+// [추가] 뒤로 가기 버튼
+function backToCharSelect() {
+    document.getElementById('route-select-screen').style.display = 'none';
+    document.getElementById('char-selection-screen').style.display = 'block';
+}
+
+// [추가] 해당 캐릭터의 루트 목록 보여주기
+async function showPlayerRoutes(charId) {
+    document.getElementById('char-selection-screen').style.display = 'none';
+    const routeScreen = document.getElementById('route-select-screen');
+    routeScreen.style.display = 'block';
+
+    const list = document.getElementById('player-route-list');
+    list.innerHTML = 'Loading...';
+
     try {
-        const state = await api(`/game/start?characterId=${charId}`, 'POST');
+        // 기존 StoryController의 API 재활용 (GET /api/story/characters/{id}/routes)
+        const routes = await api(`/story/characters/${charId}/routes`);
+        list.innerHTML = '';
+
+        if (routes.length === 0) {
+            list.innerHTML = '<p>플레이 가능한 루트가 없습니다.</p>';
+            return;
+        }
+
+        routes.forEach(r => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div>
+                    <strong>${r.title}</strong>
+                    <div style="font-size:0.8em; color:#666;">${r.warningText || '설명 없음'}</div>
+                </div>
+                <button class="btn-sm" onclick="startGame(${r.id})">시작</button>
+            `;
+            list.appendChild(li);
+        });
+    } catch(err) {
+        alert("루트 목록 로드 실패: " + err.message);
+        backToCharSelect();
+    }
+}
+async function startGame(routeId) {
+    try {
+        // 백엔드 API 호출 시 파라미터 이름 변경 (routeId)
+        const state = await api(`/game/start?routeId=${routeId}`, 'POST');
+
+        // 화면 전환
+        document.getElementById('route-select-screen').style.display = 'none';
         renderGameScreen(state);
     } catch(err) { alert(err.message); }
 }
@@ -506,7 +814,9 @@ async function showLatestReport() {
         repDiv.style.display = 'block';
 
         let html = `<h4>${report.characterName} - ${report.routeTitle}</h4>`;
-        html += `<p>결과: <strong>${report.endingLabel}</strong> (${report.endingType})</p>`;
+
+        const resultType = report.endingType ? report.endingType : "진행 중";
+        html += `<p>결과: <strong style="color:${resultType==='BAD'?'red':'blue'}">${resultType}</strong></p>`;
         html += `<p>최종 호감도: ${report.finalAffection}</p>`;
         html += `<h5>플레이 로그</h5><ul>`;
         report.steps.forEach(s => {

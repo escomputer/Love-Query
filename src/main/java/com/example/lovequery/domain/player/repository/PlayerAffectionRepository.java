@@ -10,4 +10,6 @@ public interface PlayerAffectionRepository extends JpaRepository<PlayerAffection
 
     Optional<PlayerAffection> findByPlayerIdAndCharacterId(Long playerId,Long characterId);
     List<PlayerAffection> findByPlayerId(Long playerId);
+
+    void deleteByCharacterId(Long characterId);
 }

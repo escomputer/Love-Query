@@ -149,3 +149,37 @@ th { background-color: #f8f9fa; }
     border-radius: 5px;
     color: #555;
 }
+
+/* style.css 하단에 추가 */
+
+.log-container {
+    max-height: 500px;
+    overflow-y: auto; /* 스크롤 생김 */
+    border: 1px solid #ddd;
+    margin-top: 10px;
+    background: #fff;
+}
+
+#admin-log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em; /* 로그는 글씨가 작아야 많이 보임 */
+}
+
+#admin-log-table th {
+    background-color: #f1f3f5;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+#admin-log-table th, #admin-log-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+/* 액션별 컬러링 */
+.badge-create { color: #00b894; font-weight: bold; } /* 초록 */
+.badge-update { color: #fdcb6e; font-weight: bold; } /* 노랑/오렌지 */
+.badge-delete { color: #d63031; font-weight: bold; } /* 빨강 */

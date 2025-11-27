@@ -6,6 +6,8 @@ import com.example.lovequery.domain.analytics.dto.ChoiceAnalyticsDto;
 import com.example.lovequery.domain.analytics.dto.EpisodeAnalyticsDto;
 import com.example.lovequery.domain.analytics.dto.RouteAnalyticsDto;
 import com.example.lovequery.domain.analytics.service.ReportForBalanceService;
+import com.example.lovequery.domain.log.entity.AdminLog;
+import com.example.lovequery.domain.log.repository.AdminLogRepository;
 import com.example.lovequery.domain.story.dto.route.RouteResponse;
 import com.example.lovequery.domain.user.entity.Role;
 import com.example.lovequery.domain.user.entity.User;
@@ -26,6 +28,7 @@ public class ReportForBalanceController {
 
     private final ReportForBalanceService reportForBalanceService;
     private final UserRepository userRepository;
+    private final AdminLogRepository adminLogRepository;
 
 
     /**
@@ -80,6 +83,16 @@ public class ReportForBalanceController {
         checkAdminOrTuner(userId);
 
         return reportForBalanceService.getEpisodeStatistics(routeId);
+    }
+
+    @GetMapping("/logs")
+    public List<AdminLog> getAdminLogs(HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) throw new CustomException(ErrorCode.NO_PERMISSION);
+
+        checkAdminOrTuner(userId); // 튜너도 통과
+
+        return adminLogRepository.findAllByOrderByCreatedAtDesc();
     }
 
     /**

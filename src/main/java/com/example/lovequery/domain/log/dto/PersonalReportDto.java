@@ -10,7 +10,6 @@ public record PersonalReportDto(
         String characterName,
         int finalAffection,
         EndingType endingType,
-        String endingLabel,
         List<PlayStepDto> steps
 ) {
 }

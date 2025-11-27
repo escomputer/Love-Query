@@ -28,7 +28,7 @@ public class PlayerAffection {
     private GameCharacter character;
 
     @Column(nullable = false)
-    private Integer score; // 0 ~ affinityCap (상한은 비즈니스로직에서 체크)
+    private Integer score =50; // 0 ~ affinityCap (상한은 비즈니스로직에서 체크)
 
     protected PlayerAffection() {
     }

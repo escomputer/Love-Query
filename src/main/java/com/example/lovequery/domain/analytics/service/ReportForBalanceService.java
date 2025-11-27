@@ -1,5 +1,6 @@
 package com.example.lovequery.domain.analytics.service;
 
+import com.example.lovequery.common.EndingType;
 import com.example.lovequery.common.exception.CustomException;
 import com.example.lovequery.common.exception.ErrorCode;
 import com.example.lovequery.domain.analytics.dto.ChoiceAnalyticsDto;
@@ -103,50 +104,38 @@ public class ReportForBalanceService {
     public RouteAnalyticsDto getRouteSummary(Long routeId) {
         Route route = routeRepository.findById(routeId).orElseThrow(()->new CustomException(ErrorCode.ROUTE_NOT_FOUND));
 
-        //루트 내 모든 에피소드 방문 합산
-        List<Analytics> episodeStats = analyticsRepository.findEpisodeStatsByRoute(AnalyticsKind.EPISODE,routeId);
+        List<Analytics> episodeStats = analyticsRepository.findEpisodeStatsByRoute(AnalyticsKind.EPISODE, routeId);
 
-        long totalVisits = episodeStats.stream().mapToLong(a-> a. getVisitCount()!=null?
-                a.getVisitCount():0L).sum();
+        long totalVisits = 0L;
+        long trueClear = 0L;
+        long normalClear = 0L;
+        long badClear = 0L;
 
-        long trueClear=0L;
-        long normalClear=0L;
-        long badClear=0L;
+        // 2. 루프를 돌면서 통계를 직접 집계합니다.
+        for (Analytics a : episodeStats) {
+            // (1) 총 방문자 수 합산
+            if (a.getVisitCount() != null) {
+                totalVisits += a.getVisitCount();
+            }
 
-        if(route.getTrueEndingEpisode()!=null){
-            Analytics a = analyticsRepository.findByKindAndEpisode(
-                    AnalyticsKind.EPISODE,route.getTrueEndingEpisode()
-            ).orElse(null);
+            // (2) 엔딩 클리어 수 합산
+            Episode ep = a.getEpisode();
 
+            // 엔딩 에피소드이고, 클리어 기록이 있다면?
+            if (Boolean.TRUE.equals(ep.getIsEnding()) && a.getClearCount() != null) {
+                EndingType type = ep.getEndingType();
 
-            if(a!=null && a.getClearCount()!=null){
-                trueClear=a.getClearCount();
+                if (type != null) {
+                    switch (type) {
+                        case TRUE -> trueClear += a.getClearCount();
+                        case NORMAL -> normalClear += a.getClearCount();
+                        case BAD -> badClear += a.getClearCount();
+                    }
+                }
             }
         }
 
-        if(route.getNormalEndingEpisode()!=null){
-            Analytics a = analyticsRepository.findByKindAndEpisode(
-                    AnalyticsKind.EPISODE,route.getNormalEndingEpisode()
-            ).orElse(null);
-
-
-            if(a!=null && a.getClearCount()!=null){
-                normalClear=a.getClearCount();
-            }
-        }
-
-        if(route.getBadEndingEpisode()!=null){
-            Analytics a = analyticsRepository.findByKindAndEpisode(
-                    AnalyticsKind.EPISODE,route.getBadEndingEpisode()
-            ).orElse(null);
-
-
-            if(a!=null && a.getClearCount()!=null){
-                badClear=a.getClearCount();
-            }
-        }
-
-        long totalClears = trueClear+normalClear+badClear;
+        long totalClears = trueClear + normalClear + badClear;
 
         return new RouteAnalyticsDto(
                 route.getId(),
