@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Love Query - 통합 관리자 & 플레이어</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Love Query System</h1>
+        <div id="user-info" style="display:none;">
+            <span id="welcome-msg"></span>
+            <button id="logout-btn" class="btn-danger">로그아웃</button>
+        </div>
+    </header>
+
+    <section id="auth-section">
+        <div class="tab-container">
+            <button class="tab-btn active" onclick="showAuthTab('login')">로그인</button>
+            <button class="tab-btn" onclick="showAuthTab('signup')">회원가입</button>
+        </div>
+
+        <div id="login-tab" class="auth-form">
+            <h2>로그인</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="이메일" required>
+                <input type="password" id="login-password" placeholder="비밀번호" required>
+                <button type="submit">로그인</button>
+            </form>
+        </div>
+
+        <div id="signup-tab" class="auth-form" style="display:none;">
+            <h2>회원가입</h2>
+            <form id="signup-form">
+                <input type="email" id="signup-email" placeholder="이메일" required>
+                <input type="password" id="signup-password" placeholder="비밀번호" required>
+                <input type="text" id="signup-name" placeholder="이름" required>
+                <select id="signup-role">
+                    <option value="PLAYER">플레이어</option>
+                    <option value="SCENARIO_WRITER">시나리오 작가</option>
+                    <option value="BALANCE_TUNER">밸런스 튜너</option>
+                </select>
+                <button type="submit">가입 신청</button>
+            </form>
+        </div>
+    </section>
+
+    <section id="dashboard-section" style="display:none;">
+        <nav class="main-nav">
+            <button onclick="switchView('player-view')" id="nav-player">게임 플레이</button>
+            <button onclick="switchView('writer-view')" id="nav-writer" style="display:none;">스토리 제작</button>
+            <button onclick="switchView('admin-view')" id="nav-admin" style="display:none;">관리자/통계</button>
+        </nav>
+
+        <div id="player-view" class="view-panel">
+            <h3>캐릭터 선택</h3>
+            <div id="char-list" class="card-grid"></div>
+
+            <div id="game-screen" style="display:none;" class="game-box">
+                <h4 id="ep-title">Episode Title</h4>
+                <p id="ep-text" class="story-text"></p>
+                <div id="game-status">호감도: <span id="current-affection">0</span></div>
+                <div id="choice-area"></div>
+            </div>
+
+            <div id="report-screen" style="display:none;" class="report-box">
+                <h3>플레이 리포트</h3>
+                <div id="report-content"></div>
+                <button onclick="resetGameUI()">메인으로 돌아가기</button>
+            </div>
+        </div>
+
+        <div id="writer-view" class="view-panel" style="display:none;">
+
+            <div class="breadcrumb-nav">
+                <span id="nav-char" onclick="resetWriterView('char')">Characters</span>
+                <span id="nav-route" style="display:none;"> &gt; Routes</span>
+                <span id="nav-ep" style="display:none;"> &gt; Episodes</span>
+                <span id="nav-choice" style="display:none;"> &gt; Choices</span>
+            </div>
+            <hr>
+
+            <div id="panel-char">
+                <h3>1. 캐릭터 관리</h3>
+                <div class="form-box">
+                    <form id="form-create-char" class="inline-form">
+                        <input type="text" name="name" placeholder="이름 (예: 이은세)" required>
+                        <select name="gender"><option value="F">여성</option><option value="M">남성</option></select>
+                        <input type="text" name="personality" placeholder="성격 (예: 츤데레)">
+                        <input type="number" name="affinityCap" placeholder="호감도 상한 (예: 100)" required>
+                        <button type="submit">캐릭터 생성</button>
+                    </form>
+                </div>
+                <div class="list-header">캐릭터 목록 (클릭하여 루트 관리로 이동)</div>
+                <ul id="list-char" class="item-list"></ul>
+            </div>
+
+            <div id="panel-route" style="display:none;">
+                <h3>2. 루트 관리 <span id="selected-char-name" class="highlight-text"></span></h3>
+                <div class="form-box">
+                    <form id="form-create-route" class="inline-form">
+                        <input type="text" name="title" placeholder="루트 제목 (예: 순애 루트)" required>
+                        <input type="number" name="minAffection" placeholder="최소 호감도" value="0">
+                        <input type="number" name="trueThreshold" placeholder="진엔딩 컷" value="80">
+                        <input type="text" name="warning" placeholder="경고 문구">
+                        <input type="hidden" name="badEp" value="0">
+                        <input type="hidden" name="normEp" value="0">
+                        <input type="hidden" name="trueEp" value="0">
+                        <button type="submit">루트 추가</button>
+                    </form>
+                </div>
+                <div class="list-header">루트 목록 (클릭하여 에피소드 관리로 이동)</div>
+                <ul id="list-route" class="item-list"></ul>
+            </div>
+
+            <div id="panel-ep" style="display:none;">
+                <h3>3. 에피소드 관리 <span id="selected-route-title" class="highlight-text"></span></h3>
+                <div class="form-box">
+                    <form id="form-create-ep">
+                        <textarea name="text" placeholder="에피소드 본문 내용..." rows="3" required></textarea>
+                        <div class="checkbox-group" style="margin-top: 10px;">
+                            <label>
+                                <input type="checkbox" name="isEnding" id="chk-is-ending" onchange="toggleEndingSelect()">
+                                이 에피소드는 엔딩입니다
+                            </label>
+
+                            <select name="endingType" id="sel-ending-type" style="display:none; margin-left: 10px; width: 150px; padding: 5px;">
+                                <option value="">엔딩 타입 선택...</option>
+                                <option value="TRUE">TRUE (진엔딩)</option>
+                                <option value="NORMAL">NORMAL (노말)</option>
+                                <option value="BAD">BAD (배드)</option>
+                            </select>
+                        </div>
+                        <button type="submit">에피소드 추가</button>
+                    </form>
+                </div>
+                <div class="list-header">에피소드 목록 (클릭하여 선택지 관리로 이동)</div>
+                <div id="list-ep" class="card-grid-small"></div>
+            </div>
+
+            <div id="panel-choice" style="display:none;">
+                <h3>4. 선택지 관리 (EP ID: <span id="selected-ep-id" class="highlight-text"></span>)</h3>
+                <div class="preview-box">
+                    <strong>현재 에피소드 본문:</strong>
+                    <p id="preview-ep-text"></p>
+                </div>
+
+                <div class="form-box">
+                    <form id="form-create-choice">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display:block; font-weight:bold;">1. 선택지 내용</label>
+                            <input type="text" name="text" placeholder="예: 용기내어 고백한다" required style="width:100%;">
+                        </div>
+
+                        <div style="display:flex; gap: 10px; margin-bottom: 15px;">
+                            <div style="flex:1;">
+                                <label style="font-size:0.9em;">🔒 잠금 조건 (최소 호감도)</label>
+                                <input type="number" name="minReq" placeholder="0 (잠금 없음)">
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:0.9em;">❤️ 호감도 변화량</label>
+                                <input type="number" name="delta" placeholder="0">
+                            </div>
+                        </div>
+
+                        <hr style="margin: 10px 0; border: 0; border-top: 1px dashed #ccc;">
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="display:block; font-weight:bold;">2. 결과 분기 설정</label>
+                            <div style="display:flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                <span>기준 점수(Threshold):</span>
+                                <input type="number" name="threshold" placeholder="없으면 무조건 성공" style="width: 150px;">
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap: 10px;">
+                            <div style="flex:1; background: #e6f4ea; padding: 10px; border-radius: 5px;">
+                                <label style="font-weight:bold; color:green;">✅ 성공 시 (Pass)</label>
+                                <select name="nextEpIfPassId" id="sel-next-pass" required style="width:100%; margin-top:5px;">
+                                    <option value="">선택...</option>
+                                </select>
+                            </div>
+                            <div style="flex:1; background: #fce8e6; padding: 10px; border-radius: 5px;">
+                                <label style="font-weight:bold; color:red;">❌ 실패 시 (Fail)</label>
+                                <select name="nextEpIfFailId" id="sel-next-fail" style="width:100%; margin-top:5px;">
+                                    <option value="">선택 (없으면 비워둠)...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" style="margin-top: 20px; width: 100%;">선택지 생성</button>
+                    </form>
+                </div>
+                <div class="list-header">등록된 선택지 목록</div>
+                <ul id="list-choice" class="item-list"></ul>
+            </div>
+        </div>
+
+        <div id="admin-view" class="view-panel" style="display:none;">
+
+            <div class="admin-panel">
+                <h3>권한 요청 관리 (Role Requests)</h3>
+                <button onclick="loadRoleRequests()">새로고침</button>
+                <table id="role-req-table">
+                    <thead><tr><th>ID</th><th>User</th><th>Role</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="admin-panel">
+                <h3>데이터 분석 (Analytics)</h3>
+                <button onclick="loadAnalyticsRoutes()">루트 목록 불러오기</button>
+                <select id="analytics-route-select" onchange="loadRouteStats(this.value)">
+                    <option value="">통계를 볼 루트 선택...</option>
+                </select>
+
+                <div id="analytics-result" style="display:none;">
+                    <h4>요약 (Summary)</h4>
+                    <div id="stats-summary"></div>
+
+                    <h4>에피소드 통계</h4>
+                    <table id="stats-ep-table">
+                        <thead><tr><th>EP ID</th><th>내용</th><th>방문</th><th>클리어</th><th>이탈률</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+
+                    <h4>선택지 통계</h4>
+                    <table id="stats-ch-table">
+                        <thead><tr><th>CH ID</th><th>내용</th><th>Pick</th><th>Pass</th><th>Fail</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </section>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
