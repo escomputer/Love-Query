@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +67,9 @@ public class GameService {
         //player 조회 (아마 회원가입한 모두가 가지고 있기에 예외처리 발생하지 않을 듯 !)
         Player player = playerRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PLAYER_NOT_FOUND));
+
+        String newSessionId = UUID.randomUUID().toString();
+        player.changeCurrentSessionId(newSessionId);
 
         Route route = routeRepository.findById(routeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROUTE_NOT_FOUND));
@@ -156,6 +160,7 @@ public class GameService {
 
         Episode next = null;
 
+
         Integer minRequired = route.getMinAffectionRequired();
 
         if (minRequired != null && update < minRequired) {
@@ -237,7 +242,7 @@ public class GameService {
 
 
     private void saveLog(Player player, Route route, Episode episode,Choice choice, int affectionBefore, int affectionAfter) {
-        String sessionId = player.getId()+"-"+route.getId();
+        String sessionId = player.getCurrentSessionId();
 
         PlayLog playLog = new PlayLog(
                 sessionId,
@@ -264,6 +269,7 @@ public class GameService {
                     .ifPresent(affection -> affection.updateScore(50)); // 혹은 삭제
         }
 
+        player.changeCurrentSessionId(null);
         player.changeCurrentEpisode(null);
 
         // [중요] JPA가 트랜잭션 끝날 때 알아서 하겠지만, 확실하게 하기 위해 저장!

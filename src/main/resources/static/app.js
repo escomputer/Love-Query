@@ -7,7 +7,8 @@ async function api(endpoint, method = 'GET', body = null) {
     const options = {
         method,
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        credentials: 'include',
+        cache: 'no-cache'
     };
     if (body) options.body = JSON.stringify(body);
 
@@ -428,6 +429,32 @@ async function loadWriterEpisodes(routeId) {
     } catch(e) { console.error(e); }
 }
 
+// app.js
+async function finishGame() {
+    try {
+        console.log(">>> [종료] 게임 종료 프로세스 시작");
+
+        // 1. 서버 상태 리셋
+        await api('/game/reset', 'POST');
+
+        // 2. 모든 화면 숨기기 (확실하게!)
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('report-screen').style.display = 'none';
+        document.getElementById('route-select-screen').style.display = 'none';
+        document.getElementById('char-selection-screen').style.display = 'none';
+
+        // 3. 캐릭터 목록 다시 로드
+        console.log(">>> [종료] 캐릭터 목록 재로딩 호출");
+        await loadCharacters();
+
+    } catch (err) {
+        console.error(">>> [종료 에러]", err);
+        alert("메인으로 이동 중 오류: " + err.message);
+        // 에러 나면 그냥 새로고침 해버리기 (최후의 수단)
+        location.reload();
+    }
+}
+
 async function setStartEpisode(event, epId) {
     event.stopPropagation();
     if(!confirm(`EP #${epId}를 이 루트의 시작점으로 설정하시겠습니까?`)) return;
@@ -678,44 +705,78 @@ document.getElementById('form-create-choice').addEventListener('submit', async (
 // ==========================================
 // 3. 플레이어 로직 (GameController)
 // ==========================================
-
 async function loadCharacters() {
-    // 화면 초기화: 캐릭터 선택만 보이고 나머지는 숨김
-    document.getElementById('char-selection-screen').style.display = 'block';
+    console.log(">>> [로딩] 캐릭터 로딩 시작");
+
+    // 1. 화면 전환 (캐릭터 화면만 보이기)
+    const charScreen = document.getElementById('char-selection-screen');
+    const container = document.getElementById('char-list');
+
+    // HTML 요소가 있는지 안전 점검
+    if (!charScreen || !container) {
+        console.error(">>> [치명적 오류] HTML ID를 찾을 수 없음: char-selection-screen 또는 char-list");
+        return;
+    }
+
+    // 다른 화면들은 끄고, 내 화면만 켠다
     document.getElementById('route-select-screen').style.display = 'none';
     document.getElementById('game-screen').style.display = 'none';
     document.getElementById('report-screen').style.display = 'none';
+    charScreen.style.display = 'block';
+
+    // 2. 로딩 표시
+    container.innerHTML = '<p style="padding:20px; font-weight:bold;">🔄 데이터를 불러오는 중입니다...</p>';
 
     try {
-        const chars = await api('/game/characters');
-        const container = document.getElementById('char-list');
-        container.innerHTML = '';
+        // 3. API 호출 (캐시 방지 파라미터 _t 추가)
+        const chars = await api(`/game/characters?_t=${Date.now()}`);
+        console.log(">>> [로딩] 받아온 데이터:", chars);
 
+        container.innerHTML = ''; // 로딩 문구 삭제
 
+        // 4. 데이터가 없을 때 처리
+        if (!chars || chars.length === 0) {
+            container.innerHTML = '<p>😢 캐릭터 데이터가 없습니다. (DB를 확인해주세요)</p>';
+            return;
+        }
+
+        // 5. HTML 강제 주입 (스타일 직접 지정해서 안 보일 수가 없게 만듦)
+        let htmlBuilder = '';
         chars.forEach(c => {
-            const div = document.createElement('div');
-            div.className = 'char-card';
-            div.innerHTML = `
-                <h4>${c.name}</h4>
-                <p style="font-size:0.9em; color:#555;">${c.gender} / ${c.personality}</p>
-                <p style="font-weight:bold; color:#e91e63; margin: 5px 0;">
-                    🔥 인기: ${c.popularityScore}
-                </p>
-                <button onclick="showPlayerRoutes(${c.id})">선택하기</button>
+            // 눈에 확 띄는 스타일(border, background)을 직접 넣습니다.
+            htmlBuilder += `
+                <div style="background:white; border:2px solid #ddd; border-radius:10px; padding:15px; margin-bottom:15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <h4 style="margin:0 0 5px 0; font-size:1.2em;">👤 ${c.name}</h4>
+                    <p style="margin:5px 0; color:#555;">${c.gender} / ${c.personality}</p>
+                    <p style="margin:5px 0; color:#d63384; font-weight:bold;">🔥 인기: ${c.popularityScore}</p>
+                    <button style="background:#007bff; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; margin-top:10px;" 
+                            onclick="showPlayerRoutes(${c.id})">
+                        ▶ 선택하기
+                    </button>
+                </div>
             `;
-            container.appendChild(div);
         });
 
-        // 진행 중인 게임이 있으면 바로 게임 화면으로 (기존 로직 유지)
+        container.innerHTML = htmlBuilder;
+        console.log(">>> [로딩] 화면 렌더링 완료");
+
+        // 6. 혹시 진행 중인 게임이 있는지 체크
         try {
-            const current = await api('/game/current');
-            renderGameScreen(current);
-            document.getElementById('char-selection-screen').style.display = 'none'; // 게임 중이면 숨김
-        } catch(e) {}
+            const current = await api(`/game/current?_t=${Date.now()}`);
+            if(current) {
+                console.log(">>> [로딩] 진행 중인 게임 발견 -> 이동");
+                renderGameScreen(current);
+                charScreen.style.display = 'none';
+            }
+        } catch(e) {
+            // 404 등은 정상이므로 무시
+        }
 
-    } catch(err) { console.error(err); }
+    } catch(err) {
+        console.error(">>> [에러]", err);
+        container.innerHTML = `<p style="color:red; font-weight:bold;">⚠️ 로드 실패: ${err.message}</p>`;
+    }
 }
-
 // [추가] 뒤로 가기 버튼
 function backToCharSelect() {
     document.getElementById('route-select-screen').style.display = 'none';

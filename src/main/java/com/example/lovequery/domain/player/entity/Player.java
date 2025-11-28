@@ -30,6 +30,9 @@ public class Player extends BaseEntity {
     @JoinColumn(name ="current_ep_id")
     private Episode currentEpisode;
 
+    @Column(name = "current_session_id", length = 100)
+    private String currentSessionId;
+
     protected Player() {
 
     }
@@ -42,6 +45,8 @@ public class Player extends BaseEntity {
         this.currentEpisode = episode;
     }
 
-
+    public void changeCurrentSessionId(String sessionId) {
+        this.currentSessionId = sessionId;
+    }
 
 }

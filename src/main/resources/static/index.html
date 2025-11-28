@@ -56,49 +56,45 @@
 
 
 
-            <div id="player-view" class="view-panel">
+        <div id="player-view" class="view-panel">
 
-                <div id="char-selection-screen">
-                    <h3>캐릭터 선택</h3>
-                    <div id="char-list" class="card-grid"></div>
-                    <p id="char-message" class="error"></p>
-                </div>
-
-                <div id="route-select-screen" style="display:none;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <h3>루트 선택</h3>
-                        <button class="btn-sm" onclick="backToCharSelect()" style="background:#6c757d;">⬅ 캐릭터 다시 선택</button>
-                    </div>
-                    <p>플레이할 루트를 선택하세요:</p>
-                    <ul id="player-route-list" class="item-list"></ul>
-                </div>
-
-                <div id="game-screen" style="display:none;" class="game-box">
-
-                    <div style="background:#fff0f6; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #fcc2d7; display:flex; justify-content:space-between; align-items:center;">
-                        <h4 id="ep-title" style="margin:0;">Episode Title</h4>
-                        <div id="game-status" style="font-size:1.1em; font-weight:bold; color:#d63384;">
-                            💖 내 호감도: <span id="current-affection" style="font-size:1.3em;">0</span>
-                        </div>
-                    </div>
-
-                    <p id="ep-text" class="story-text"></p>
-
-                    <div id="choice-area"></div>
-
-                    <hr style="margin: 20px 0;">
-                    <div style="text-align: right;">
-                        <button id="btn-reset-game" class="btn-danger">🔄 처음부터 다시 하기</button>
-                    </div>
-                </div>
-
-                <div id="report-screen" style="display:none;" class="report-box">
-                    <h3>플레이 리포트</h3>
-                    <div id="report-content"></div>
-                    <button onclick="resetGameUI()">메인으로 돌아가기</button>
-                </div>
-
+            <div id="char-selection-screen">
+                <h3>캐릭터 선택</h3>
+                <div id="char-list" class="card-grid"></div>
+                <p id="char-message" class="error"></p>
             </div>
+
+            <div id="route-select-screen" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>루트 선택</h3>
+                    <button class="btn-sm" onclick="backToCharSelect()" style="background:#6c757d; color:white;">⬅ 캐릭터 다시 선택</button>
+                </div>
+                <p>플레이할 루트를 선택하세요:</p>
+                <div id="player-route-list" class="item-list"></div>
+            </div>
+
+            <div id="game-screen" style="display:none;" class="game-box">
+                <div style="background:#fff0f6; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #fcc2d7; display:flex; justify-content:space-between; align-items:center;">
+                    <h4 id="ep-title" style="margin:0;">Episode Title</h4>
+                    <div id="game-status" style="font-size:1.1em; font-weight:bold; color:#d63384;">
+                        💖 내 호감도: <span id="current-affection" style="font-size:1.3em;">0</span>
+                    </div>
+                </div>
+                <p id="ep-text" class="story-text"></p>
+                <div id="choice-area"></div>
+                <hr style="margin: 20px 0;">
+                <div style="text-align: right;">
+                    <button id="btn-reset-game" class="btn-danger">🔄 처음부터 다시 하기</button>
+                </div>
+            </div>
+
+            <div id="report-screen" style="display:none;" class="report-box">
+                <h3>플레이 리포트</h3>
+                <div id="report-content"></div>
+                <button onclick="finishGame()">메인으로 돌아가기</button>
+            </div>
+
+        </div>
 
         <div id="writer-view" class="view-panel" style="display:none;">
 
