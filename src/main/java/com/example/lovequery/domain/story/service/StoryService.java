@@ -77,7 +77,7 @@ public class StoryService {
         Route route = routeRepository.findById(request.routeId())
                 .orElseThrow(()->new CustomException(ErrorCode.ROUTE_NOT_FOUND));
 
-        Episode episode = new Episode(route,request.text(),request.isEnding(),request.endingType());
+        Episode episode = new Episode(route, request.title(), request.text(), request.isEnding(), request.endingType());
 
         Episode saved = episodeRepository.save(episode);
 
@@ -86,6 +86,7 @@ public class StoryService {
         return new EpisodeResponse(
                 saved.getId(),
                 saved.getRoute().getId(),
+                saved.getTitle(),
                 saved.getText(),
                 saved.getIsEnding(),
                 saved.getEndingType()
@@ -244,7 +245,7 @@ public class StoryService {
                 .orElseThrow(() -> new CustomException(ErrorCode.EPISODE_NOT_FOUND));
 
         // endingType 로직 반영
-        episode.update(req.text(), req.isEnding(), req.endingType());
+        episode.update(req.title(), req.text(), req.isEnding(), req.endingType());
         saveAdminLog(userId, "UPDATE", "EPISODE", epId, "정보 수정");
     }
 
@@ -303,6 +304,7 @@ public class StoryService {
                 .map(ep-> new EpisodeResponse(
                         ep.getId(),
                         routeId,
+                        ep.getTitle(),
                         ep.getText(),
                         ep.getIsEnding(),
                         ep.getEndingType()

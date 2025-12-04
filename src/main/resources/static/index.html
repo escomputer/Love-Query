@@ -98,12 +98,20 @@
 
         <div id="writer-view" class="view-panel" style="display:none;">
 
+            <!-- html -->
             <div class="breadcrumb-nav">
                 <span id="nav-char" onclick="resetWriterView('char')">Characters</span>
-                <span id="nav-route" style="display:none;"> &gt; Routes</span>
-                <span id="nav-ep" style="display:none;"> &gt; Episodes</span>
-                <span id="nav-choice" style="display:none;"> &gt; Choices</span>
+                <span id="nav-route" style="display:none;" role="button" tabindex="0"
+                      onclick="resetWriterView('route')"
+                      onkeypress="if(event.key==='Enter') resetWriterView('route')"> &gt; Routes</span>
+                <span id="nav-ep" style="display:none;" role="button" tabindex="0"
+                      onclick="resetWriterView('ep')"
+                      onkeypress="if(event.key==='Enter') resetWriterView('ep')"> &gt; Episodes</span>
+                <span id="nav-choice" style="display:none;" role="button" tabindex="0"
+                      onclick="resetWriterView('choice')"
+                      onkeypress="if(event.key==='Enter') resetWriterView('choice')"> &gt; Choices</span>
             </div>
+
             <hr>
 
             <div id="panel-char">
@@ -143,6 +151,10 @@
                 <h3>3. 에피소드 관리 <span id="selected-route-title" class="highlight-text"></span></h3>
                 <div class="form-box">
                     <form id="form-create-ep">
+                        <div class="form-group">
+                            <input type="text" name="title" placeholder="에피소드 제목 (예: 캠퍼스에서의 첫 만남)" style="width:100%; padding:8px; margin-bottom:8px;">
+                        </div>
+
                         <textarea name="text" placeholder="에피소드 본문 내용..." rows="3" required></textarea>
                         <div class="checkbox-group" style="margin-top: 10px;">
                             <label>
@@ -152,7 +164,7 @@
 
                             <select name="endingType" id="sel-ending-type" style="display:none; margin-left: 10px; width: 150px; padding: 5px;">
                                 <option value="">엔딩 타입 선택...</option>
-                                <option value="TRUE">TRUE (진엔딩)</option>
+                                <option value="TRUE">GOOD (해피엔딩)</option>
                                 <option value="NORMAL">NORMAL (노말)</option>
                                 <option value="BAD">BAD (배드)</option>
                             </select>
@@ -191,13 +203,38 @@
 
                         <hr style="margin: 10px 0; border: 0; border-top: 1px dashed #ccc;">
 
+                        <!-- language: html -->
+                        <!-- 수정할 부분: form id="form-create-choice" 내부의 '결과 분기 설정' 영역(중복 항목 제거) -->
                         <div style="margin-bottom: 15px;">
                             <label style="display:block; font-weight:bold;">2. 결과 분기 설정</label>
-                            <div style="display:flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                                <span>기준 점수(Threshold):</span>
-                                <input type="number" name="threshold" placeholder="없으면 무조건 성공" style="width: 150px;">
+
+                            <div class="form-group">
+                                <label for="threshold">기준 점수(Threshold):</label>
+                                <input type="number" id="threshold" name="threshold"
+                                       placeholder="없으면 무조건 성공"
+                                       style="width: 150px;"
+                                       value="0">
                             </div>
                         </div>
+
+                        <!-- language: html -->
+                        <!-- 파일 끝부분 스크립트(기존 잘못된 ID 대신 실제 폼 id 사용, 제출 전에 빈값이면 0으로 보정) -->
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function () {
+                                const form = document.getElementById('form-create-choice');
+                                const thresholdInput = document.getElementById('threshold');
+                                if (!form || !thresholdInput) return;
+
+                                form.addEventListener('submit', function (e) {
+                                    const val = thresholdInput.value;
+                                    if (val === '' || isNaN(Number(val))) {
+                                        thresholdInput.value = '0';
+                                    }
+                                    // 폼은 계속 제출됨
+                                });
+                            });
+                        </script>
+
 
                         <div style="display:flex; gap: 10px;">
                             <div style="flex:1; background: #e6f4ea; padding: 10px; border-radius: 5px;">
@@ -286,7 +323,47 @@
 
     </section>
 </div>
-
+<!-- html -->
+<!-- 파일: `src/main/resources/static/index.html` 하단(종결부) 교체 예시 -->
 <script src="app.js"></script>
+
+<script>
+    (function () {
+        try {
+            // 안전 검사: 요소가 없으면 아무것도 하지 않음
+            const form = document.getElementById('form-create-choice') || document.getElementById('choiceForm');
+            const threshold = document.getElementById('threshold');
+            const modalEl = document.getElementById('thresholdModal');
+
+            if (!form || !threshold) {
+                console.debug('choice form or threshold input not found - skipping threshold guard');
+                return;
+            }
+
+            // 중복 바인딩 방지
+            if (form.dataset.hasThresholdHandler) return;
+            form.dataset.hasThresholdHandler = '1';
+
+            form.addEventListener('submit', function (e) {
+                const val = threshold.value;
+                if (!val) {
+                    e.preventDefault();
+                    if (window.jQuery && modalEl) {
+                        window.jQuery('#thresholdModal').modal('show');
+                        return;
+                    }
+                    if (window.bootstrap && typeof window.bootstrap.Modal === 'function' && modalEl) {
+                        const bsModal = new window.bootstrap.Modal(modalEl);
+                        bsModal.show();
+                        return;
+                    }
+                    alert('기준 점수를 입력하세요');
+                }
+            });
+        } catch (err) {
+            console.debug('threshold guard setup failed (ignored):', err);
+        }
+    })();
+</script>
 </body>
 </html>

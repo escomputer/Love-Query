@@ -29,6 +29,9 @@ public class Episode extends BaseEntity {
     @JoinColumn(name = "route_id")
     private Route route;
 
+    @Column(length = 100)
+    private String title;
+
     @Lob
     @Column(nullable = false)
     private String text;
@@ -43,15 +46,17 @@ public class Episode extends BaseEntity {
     protected Episode() {
     }
 
-    public Episode(Route route, String text, Boolean isEnding, EndingType endingType) {
+    public Episode(Route route, String title, String text, Boolean isEnding, EndingType endingType) {
         this.route = route;
+        this.title = (title != null && !title.isBlank()) ? title : null;
         this.text = text;
         this.isEnding = (isEnding != null) ? isEnding : false;
         this.endingType = endingType;
     }
 
 
-    public void update(String text, Boolean isEnding, EndingType endingType) {
+    public void update(String title, String text, Boolean isEnding, EndingType endingType) {
+        this.title = (title != null && !title.isBlank()) ? title : null;
         this.text = text;
         this.isEnding = isEnding != null ? isEnding : false;
         this.endingType = endingType;

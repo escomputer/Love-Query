@@ -231,6 +231,7 @@ public class GameService {
 
         return new GameStateDto(
                 ep.getId(),
+                ep.getTitle(),
                 ep.getText(),
                 choiceDtos,
                 score,

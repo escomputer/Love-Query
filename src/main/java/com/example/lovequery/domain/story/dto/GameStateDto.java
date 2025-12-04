@@ -7,6 +7,7 @@ import java.util.List;
 
 public record GameStateDto(
         Long epId,
+        String epTitle,
         String epText,
         List<ChoiceDto> choices,
         int affection,

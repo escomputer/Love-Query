@@ -4,6 +4,7 @@ import com.example.lovequery.common.EndingType;
 
 public record UpdateEpisodeRequest(
         Long routeId,
+        String title,
         String text,
         Boolean isEnding,
         EndingType endingType
