@@ -125,7 +125,16 @@ function switchView(viewId) {
     document.getElementById(viewId).style.display = 'block';
 
     if (viewId === 'admin-view') {
-        loadRoleRequests();
+        // 권한 요청 관리는 GAME_ADMIN만 볼 수 있음
+        const roleRequestPanel = document.getElementById('role-request-panel');
+        if (roleRequestPanel) {
+            if (currentUser && currentUser.role === 'GAME_ADMIN') {
+                roleRequestPanel.style.display = 'block';
+                loadRoleRequests();
+            } else {
+                roleRequestPanel.style.display = 'none';
+            }
+        }
         loadAnalyticsRoutes();
         loadAdminLogs();
     }
